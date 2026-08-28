@@ -1,0 +1,107 @@
+<header class="header">
+  <div class="container header-inner">
+    <a class="brand" routerLink="/" (click)="closeMenu()">
+      <img
+        class="brand-logo"
+        [ngSrc]="logoSrc()"
+        width="640"
+        height="273"
+        alt="MechReach"
+        priority
+      />
+    </a>
+
+    @if (menuOpen()) {
+      <button
+        class="backdrop"
+        type="button"
+        tabindex="-1"
+        aria-hidden="true"
+        (click)="closeMenu()"
+      ></button>
+    }
+
+    <nav
+      id="primary-nav"
+      class="nav"
+      [class.is-open]="menuOpen()"
+      aria-label="Primary"
+    >
+      <ul class="nav-list">
+        @for (link of navLinks; track link.id) {
+          <li>
+            <a class="nav-link" [href]="link.href" (click)="onNavClick()">{{ link.label }}</a>
+          </li>
+        }
+      </ul>
+
+      <a class="btn btn-primary nav-cta" href="#services" (click)="onNavClick()">Request Help</a>
+    </nav>
+
+    <div class="header-actions">
+      <button
+        class="theme-toggle"
+        type="button"
+        [attr.aria-pressed]="isDark()"
+        [attr.aria-label]="themeToggleLabel()"
+        (click)="toggleTheme()"
+      >
+        @if (isDark()) {
+          <svg class="theme-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 4.2v1.3M12 18.5v1.3M6.1 6.1l.9.9M17 17l.9.9M4.2 12H5.5M18.5 12h1.3M6.1 17.9l.9-.9M17 7l.9-.9M12 8.2a3.8 3.8 0 1 1 0 7.6 3.8 3.8 0 0 1 0-7.6Z"
+            />
+          </svg>
+        } @else {
+          <svg class="theme-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M16.4 13.3A6.2 6.2 0 0 1 10.8 5 6.6 6.6 0 1 0 19 14.2a6.2 6.2 0 0 1-2.6-.9Z"
+            />
+          </svg>
+        }
+      </button>
+
+      <button
+        #menuButton
+        class="menu-toggle"
+        type="button"
+        [attr.aria-expanded]="menuOpen()"
+        aria-controls="primary-nav"
+        [attr.aria-label]="menuLabel()"
+        (click)="toggleMenu()"
+      >
+        @if (menuOpen()) {
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              d="M6 6l12 12M18 6 6 18"
+            />
+          </svg>
+        } @else {
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              d="M5 7h14M5 12h14M5 17h14"
+            />
+          </svg>
+        }
+      </button>
+    </div>
+  </div>
+</header>
