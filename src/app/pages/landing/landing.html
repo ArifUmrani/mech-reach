@@ -9,7 +9,7 @@
           reliable mechanics.
         </p>
         <div class="hero-actions">
-          <a class="btn btn-primary btn-lg" href="#services">Request a Mechanic</a>
+          <a class="btn btn-primary btn-lg" routerLink="/request">Request a Mechanic</a>
           <a class="btn btn-secondary btn-lg" routerLink="/mechanic/join">Become a Mechanic</a>
         </div>
       </div>
@@ -105,13 +105,18 @@
           <ul class="service-grid">
             @for (service of category.services; track service.id) {
               <li>
-                <article class="service-card" [attr.data-category]="category.id" tabindex="0">
+                <a
+                  class="service-card"
+                  [attr.data-category]="category.id"
+                  routerLink="/request"
+                  [queryParams]="requestQuery(category.id, service.id)"
+                >
                   <span class="service-icon" aria-hidden="true">
                     <app-service-icon [name]="service.icon" />
                   </span>
                   <h4>{{ service.title }}</h4>
                   <p>{{ service.description }}</p>
-                </article>
+                </a>
               </li>
             }
           </ul>

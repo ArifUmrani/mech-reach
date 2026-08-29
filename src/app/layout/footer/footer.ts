@@ -8,6 +8,7 @@ interface FooterLink {
   readonly label: string;
   readonly routerLink: string;
   readonly fragment?: string;
+  readonly queryParams?: Readonly<Record<string, string>>;
 }
 
 @Component({
@@ -29,8 +30,8 @@ export class Footer {
   ];
 
   protected readonly serviceLinks: readonly FooterLink[] = [
-    { id: 'emergency', label: 'Emergency Roadside Help', routerLink: '/', fragment: 'services' },
-    { id: 'doorstep', label: 'Doorstep Services', routerLink: '/', fragment: 'doorstep-services' },
+    { id: 'emergency', label: 'Emergency Roadside Help', routerLink: '/request', queryParams: { kind: 'roadside' } },
+    { id: 'doorstep', label: 'Doorstep Services', routerLink: '/request', queryParams: { kind: 'doorstep' } },
   ];
 
   protected readonly accountLinks: readonly FooterLink[] = [
