@@ -1,6 +1,7 @@
 import { NgOptimizedImage } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { CustomerAuthService } from '../../core/customer-auth/customer-auth.service';
 import { ThemeService } from '../../core/theme/theme.service';
 
 interface FooterLink {
@@ -19,6 +20,7 @@ interface FooterLink {
 })
 export class Footer {
   private readonly themeService = inject(ThemeService);
+  private readonly auth = inject(CustomerAuthService);
 
   protected readonly logoSrc = this.themeService.logoSrc;
   protected readonly currentYear = new Date().getFullYear();
@@ -34,10 +36,12 @@ export class Footer {
     { id: 'doorstep', label: 'Doorstep Services', routerLink: '/request', queryParams: { kind: 'doorstep' } },
   ];
 
-  protected readonly accountLinks: readonly FooterLink[] = [
+  protected readonly accountLinks = computed((): readonly FooterLink[] => [
     { id: 'become-a-mechanic', label: 'Become a Mechanic', routerLink: '/mechanic/join' },
-    { id: 'sign-in', label: 'Sign In', routerLink: '/', fragment: 'sign-in' },
-  ];
+    this.auth.signedIn()
+      ? { id: 'account', label: 'Account', routerLink: '/account' }
+      : { id: 'sign-in', label: 'Sign In', routerLink: '/signin' },
+  ]);
 
   protected readonly legalLinks: readonly FooterLink[] = [
     { id: 'privacy', label: 'Privacy', routerLink: '/', fragment: 'privacy' },

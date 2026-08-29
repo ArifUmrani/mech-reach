@@ -1,0 +1,27 @@
+<section class="account" aria-labelledby="account-heading">
+  <div class="container account-shell">
+    @if (session(); as current) {
+      <p class="eyebrow">Account</p>
+      <h1 id="account-heading" tabindex="-1">{{ current.fullName }}</h1>
+      <p class="lede">Signed in with the mobile number ending in {{ maskedMobile() }}.</p>
+
+      <div class="card">
+        <dl>
+          <div>
+            <dt>Name</dt>
+            <dd>{{ current.fullName }}</dd>
+          </div>
+          <div>
+            <dt>Mobile</dt>
+            <dd>{{ maskedMobile() }}</dd>
+          </div>
+        </dl>
+
+        <div class="actions">
+          <a class="btn btn-primary btn-lg" routerLink="/request">Request help</a>
+          <button class="btn btn-secondary" type="button" (click)="signOut()">Sign out</button>
+        </div>
+      </div>
+    }
+  </div>
+</section>

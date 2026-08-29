@@ -1,4 +1,8 @@
 import { Routes } from '@angular/router';
+import {
+  redirectIfCustomerSignedIn,
+  requireCustomerSession,
+} from './core/customer-auth/customer-auth.guards';
 
 export const routes: Routes = [
   {
@@ -20,6 +24,20 @@ export const routes: Routes = [
       import('./pages/customer-request/customer-request').then((module) => module.CustomerRequest),
   },
   {
+    path: 'signin',
+    title: 'Sign In | MechReach',
+    canActivate: [redirectIfCustomerSignedIn],
+    loadComponent: () =>
+      import('./pages/customer-signin/customer-signin').then((module) => module.CustomerSignin),
+  },
+  {
+    path: 'account',
+    title: 'Account | MechReach',
+    canActivate: [requireCustomerSession],
+    loadComponent: () =>
+      import('./pages/customer-account/customer-account').then((module) => module.CustomerAccount),
+  },
+  {
     path: 'request-a-mechanic',
     redirectTo: '/request',
     pathMatch: 'full',
@@ -27,6 +45,11 @@ export const routes: Routes = [
   {
     path: 'become-a-mechanic',
     redirectTo: '/mechanic/join',
+    pathMatch: 'full',
+  },
+  {
+    path: 'sign-in',
+    redirectTo: '/signin',
     pathMatch: 'full',
   },
   {

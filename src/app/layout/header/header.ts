@@ -10,6 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { CustomerAuthService } from '../../core/customer-auth/customer-auth.service';
 import { ThemeService } from '../../core/theme/theme.service';
 
 interface HeaderNavLink {
@@ -31,6 +32,7 @@ interface HeaderNavLink {
 export class Header {
   private readonly document = inject(DOCUMENT);
   private readonly themeService = inject(ThemeService);
+  private readonly auth = inject(CustomerAuthService);
   private readonly menuButton = viewChild<ElementRef<HTMLButtonElement>>('menuButton');
 
   protected readonly logoSrc = this.themeService.logoSrc;
@@ -41,13 +43,15 @@ export class Header {
     this.menuOpen() ? 'Close navigation menu' : 'Open navigation menu',
   );
 
-  protected readonly navLinks: readonly HeaderNavLink[] = [
+  protected readonly navLinks = computed((): readonly HeaderNavLink[] => [
     { id: 'home', label: 'Home', routerLink: '/', fragment: 'home' },
     { id: 'services', label: 'Services', routerLink: '/', fragment: 'services' },
     { id: 'how-it-works', label: 'How It Works', routerLink: '/', fragment: 'how-it-works' },
     { id: 'become-a-mechanic', label: 'Become a Mechanic', routerLink: '/mechanic/join' },
-    { id: 'sign-in', label: 'Sign In', routerLink: '/', fragment: 'sign-in' },
-  ];
+    this.auth.signedIn()
+      ? { id: 'account', label: 'Account', routerLink: '/account' }
+      : { id: 'sign-in', label: 'Sign In', routerLink: '/signin' },
+  ]);
 
   constructor() {
     effect(() => {

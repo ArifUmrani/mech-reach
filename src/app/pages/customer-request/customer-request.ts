@@ -42,6 +42,7 @@ import {
   todayIsoDate,
   vehicleLabel,
 } from '../../core/customer-request/customer-request.model';
+import { CustomerAuthService } from '../../core/customer-auth/customer-auth.service';
 import { CustomerRequestService } from '../../core/customer-request/customer-request.service';
 import { isValidMobile, normalizeMobile } from '../../core/mechanic-join/mobile';
 
@@ -58,6 +59,7 @@ export class CustomerRequest {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly request = inject(CustomerRequestService);
+  private readonly auth = inject(CustomerAuthService);
   private readonly stepHeading = viewChild<ElementRef<HTMLElement>>('stepHeading');
 
   protected readonly draft = this.request.draft;
@@ -106,7 +108,7 @@ export class CustomerRequest {
   protected readonly maskedMobile = computed(() => this.request.maskedMobile());
   protected readonly contactActionLabel = computed(() => {
     const mobile = this.contactModel().mobile.trim();
-    if (this.draft().mobileVerified && this.draft().mobile === normalizeMobile(mobile)) {
+    if (mobile && this.isContactVerified(mobile)) {
       return 'Continue to review';
     }
     return 'Send confirmation code';
@@ -196,6 +198,7 @@ export class CustomerRequest {
   });
 
   constructor() {
+    this.prefillFromSession();
     this.applyStartParams();
   }
 
@@ -325,12 +328,11 @@ export class CustomerRequest {
       const value = this.contactModel();
       const fullName = value.fullName.trim();
       const mobile = value.mobile.trim();
-      const sameVerifiedMobile =
-        this.draft().mobileVerified && this.draft().mobile === normalizeMobile(mobile);
 
       this.request.patch({ fullName });
 
-      if (sameVerifiedMobile) {
+      if (this.isContactVerified(mobile)) {
+        this.request.patch({ mobile: normalizeMobile(mobile) });
         this.goTo('review');
         return undefined;
       }
@@ -399,10 +401,11 @@ export class CustomerRequest {
       scheduleDate: '',
       scheduleTime: '',
     });
-    this.contactModel.set({ fullName: '', mobile: '' });
     this.otpModel.set({ code: '' });
     this.issuedCode.set('');
     this.choiceError.set('');
+    this.prefillFromSession();
+    this.contactModel.set({ fullName: this.draft().fullName, mobile: this.draft().mobile });
     this.step.set('kind');
     void this.router.navigateByUrl('/request', { replaceUrl: true });
     this.focusStepHeading();
@@ -420,6 +423,30 @@ export class CustomerRequest {
   protected edit(step: RequestStep): void {
     this.goTo(step);
     this.focusStepHeading();
+  }
+
+  private prefillFromSession(): void {
+    const session = this.auth.session();
+    if (!session || this.request.submitted()) {
+      return;
+    }
+
+    const current = this.draft();
+    this.request.patch({
+      fullName: current.fullName || session.fullName,
+      mobile: current.mobile || session.mobile,
+    });
+  }
+
+  private isContactVerified(mobile: string): boolean {
+    const normalized = normalizeMobile(mobile);
+    if (!normalized) {
+      return false;
+    }
+    if (this.auth.matchesVerifiedMobile(normalized)) {
+      return true;
+    }
+    return this.draft().mobileVerified && this.draft().mobile === normalized;
   }
 
   private applyStartParams(): void {
@@ -463,7 +490,7 @@ export class CustomerRequest {
       return;
     }
 
-    if (step === 'review' && !this.draft().mobileVerified) {
+    if (step === 'review' && !this.isContactVerified(this.draft().mobile)) {
       this.step.set('contact');
       this.choiceError.set('');
       this.hydrate('contact');
