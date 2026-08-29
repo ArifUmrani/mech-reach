@@ -1,0 +1,592 @@
+<section class="request" aria-labelledby="request-heading">
+  <div class="container request-shell">
+    @if (step() !== 'submitted') {
+      <p class="eyebrow">Request a mechanic</p>
+      <p class="progress-label" id="request-progress-label">
+        Step {{ formStepNumber() }} of {{ formStepCount }}
+      </p>
+      <div
+        class="progress"
+        role="progressbar"
+        aria-labelledby="request-progress-label"
+        [attr.aria-valuenow]="formStepNumber()"
+        aria-valuemin="1"
+        [attr.aria-valuemax]="formStepCount"
+      >
+        <div class="progress-fill" [style.width.%]="progressPercent()"></div>
+      </div>
+    }
+
+    @switch (step()) {
+      @case ('kind') {
+        <h1 id="request-heading" #stepHeading tabindex="-1">What kind of help do you need?</h1>
+        <p class="lede">Choose roadside emergency help or a scheduled doorstep service.</p>
+
+        <form class="card" (submit)="continueKind($event)">
+          <fieldset [attr.aria-describedby]="choiceError() ? 'kind-error' : null">
+            <legend class="visually-hidden">Type of help</legend>
+            <div class="choice-list">
+              @for (option of helpKindOptions; track option.value) {
+                <label class="choice" [class.is-selected]="draft().helpKind === option.value">
+                  <input
+                    type="radio"
+                    name="help-kind"
+                    [value]="option.value"
+                    [checked]="draft().helpKind === option.value"
+                    (change)="selectKind(option.value)"
+                  />
+                  <span>
+                    <span class="choice-title">{{ option.title }}</span>
+                    <span class="choice-desc">{{ option.description }}</span>
+                  </span>
+                </label>
+              }
+            </div>
+          </fieldset>
+          @if (choiceError()) {
+            <p id="kind-error" class="error" role="alert">{{ choiceError() }}</p>
+          }
+          <div class="actions">
+            <button class="btn btn-primary btn-lg" type="submit">Continue</button>
+          </div>
+        </form>
+      }
+
+      @case ('service') {
+        <h1 id="request-heading" #stepHeading tabindex="-1">What do you need help with?</h1>
+        <p class="lede">Choose one service. If it is not listed, pick Other and describe it.</p>
+
+        <form class="card" (submit)="continueService($event)" novalidate>
+          <fieldset [attr.aria-describedby]="choiceError() ? 'service-error' : null">
+            <legend class="visually-hidden">Service</legend>
+            <div class="choice-list">
+              @for (service of serviceOptions(); track service.id) {
+                <label class="choice" [class.is-selected]="draft().serviceId === service.id">
+                  <input
+                    type="radio"
+                    name="request-service"
+                    [value]="service.id"
+                    [checked]="draft().serviceId === service.id"
+                    (change)="selectService(service.id)"
+                  />
+                  <span>
+                    <span class="choice-title">{{ service.title }}</span>
+                    <span class="choice-desc">{{ service.description }}</span>
+                  </span>
+                </label>
+              }
+            </div>
+          </fieldset>
+
+          @if (otherIssueSelected()) {
+            <div class="field">
+              <label for="other-details">Describe what you need</label>
+              <textarea
+                id="other-details"
+                rows="4"
+                [formField]="otherForm.otherDetails"
+                [attr.aria-invalid]="showError(otherForm.otherDetails())"
+                [attr.aria-describedby]="
+                  showError(otherForm.otherDetails()) ? 'other-details-error' : 'other-details-hint'
+                "
+              ></textarea>
+              <p id="other-details-hint" class="hint">A short note is enough for the mechanic to prepare.</p>
+              @if (showError(otherForm.otherDetails())) {
+                <p id="other-details-error" class="error" role="alert">
+                  {{ firstError(otherForm.otherDetails().errors()) }}
+                </p>
+              }
+            </div>
+          }
+
+          @if (choiceError()) {
+            <p id="service-error" class="error" role="alert">{{ choiceError() }}</p>
+          }
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" (click)="back()">Back</button>
+            <button class="btn btn-primary btn-lg" type="submit" [disabled]="otherForm().submitting()">
+              Continue
+            </button>
+          </div>
+        </form>
+      }
+
+      @case ('vehicle') {
+        <h1 id="request-heading" #stepHeading tabindex="-1">What vehicle needs help?</h1>
+        <p class="lede">This helps us connect you with the right mechanic.</p>
+
+        <form class="card" (submit)="continueVehicle($event)" novalidate>
+          <fieldset [attr.aria-describedby]="choiceError() ? 'vehicle-error' : null">
+            <legend class="visually-hidden">Vehicle</legend>
+            <div class="choice-list">
+              @for (option of vehicleOptions; track option.value) {
+                <label class="choice" [class.is-selected]="draft().vehicleKind === option.value">
+                  <input
+                    type="radio"
+                    name="request-vehicle"
+                    [value]="option.value"
+                    [checked]="draft().vehicleKind === option.value"
+                    (change)="selectVehicle(option.value)"
+                  />
+                  <span>
+                    <span class="choice-title">{{ option.title }}</span>
+                    <span class="choice-desc">{{ option.description }}</span>
+                  </span>
+                </label>
+              }
+            </div>
+          </fieldset>
+
+          <div class="field">
+            <label for="vehicle-detail">Make and model <span class="optional">(optional)</span></label>
+            <input
+              id="vehicle-detail"
+              type="text"
+              autocomplete="off"
+              [formField]="vehicleForm.vehicleDetail"
+              [attr.aria-invalid]="showError(vehicleForm.vehicleDetail())"
+              [attr.aria-describedby]="
+                showError(vehicleForm.vehicleDetail()) ? 'vehicle-detail-error' : 'vehicle-detail-hint'
+              "
+            />
+            <p id="vehicle-detail-hint" class="hint">For example Honda Civic 2018.</p>
+            @if (showError(vehicleForm.vehicleDetail())) {
+              <p id="vehicle-detail-error" class="error" role="alert">
+                {{ firstError(vehicleForm.vehicleDetail().errors()) }}
+              </p>
+            }
+          </div>
+
+          @if (choiceError()) {
+            <p id="vehicle-error" class="error" role="alert">{{ choiceError() }}</p>
+          }
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" (click)="back()">Back</button>
+            <button class="btn btn-primary btn-lg" type="submit" [disabled]="vehicleForm().submitting()">
+              Continue
+            </button>
+          </div>
+        </form>
+      }
+
+      @case ('location') {
+        <h1 id="request-heading" #stepHeading tabindex="-1">Where should the mechanic come?</h1>
+        <p class="lede">
+          @if (isDoorstep()) {
+            Share a city, a place the mechanic can find, and when they should come.
+          } @else {
+            Share a city and a place the mechanic can find. Roadside help is treated as now.
+          }
+        </p>
+
+        <form class="card" (submit)="saveLocation($event)" novalidate>
+          <div class="field">
+            <label for="city">City</label>
+            <input
+              id="city"
+              type="text"
+              autocomplete="address-level2"
+              [formField]="locationForm.city"
+              [attr.aria-invalid]="showError(locationForm.city())"
+              [attr.aria-describedby]="showError(locationForm.city()) ? 'city-error' : null"
+            />
+            @if (showError(locationForm.city())) {
+              <p id="city-error" class="error" role="alert">
+                {{ firstError(locationForm.city().errors()) }}
+              </p>
+            }
+          </div>
+
+          <div class="field">
+            <label for="location">Location</label>
+            <textarea
+              id="location"
+              rows="3"
+              [formField]="locationForm.location"
+              [attr.aria-invalid]="showError(locationForm.location())"
+              [attr.aria-describedby]="
+                showError(locationForm.location()) ? 'location-error' : 'location-hint'
+              "
+            ></textarea>
+            <p id="location-hint" class="hint">
+              Street, landmark, or a short description of where you are.
+            </p>
+            @if (showError(locationForm.location())) {
+              <p id="location-error" class="error" role="alert">
+                {{ firstError(locationForm.location().errors()) }}
+              </p>
+            }
+          </div>
+
+          @if (isDoorstep()) {
+            <fieldset [attr.aria-describedby]="showError(locationForm.scheduleWhen()) ? 'when-error' : null">
+              <legend>When</legend>
+              <div class="choice-list">
+                @for (option of scheduleOptions; track option.value) {
+                  <label
+                    class="choice"
+                    [class.is-selected]="locationModel().scheduleWhen === option.value"
+                  >
+                    <input
+                      type="radio"
+                      name="schedule-when"
+                      [value]="option.value"
+                      [checked]="locationModel().scheduleWhen === option.value"
+                      (change)="selectSchedule(option.value)"
+                    />
+                    <span>
+                      <span class="choice-title">{{ option.title }}</span>
+                      <span class="choice-desc">{{ option.description }}</span>
+                    </span>
+                  </label>
+                }
+              </div>
+              @if (showError(locationForm.scheduleWhen())) {
+                <p id="when-error" class="error" role="alert">
+                  {{ firstError(locationForm.scheduleWhen().errors()) }}
+                </p>
+              }
+            </fieldset>
+          }
+
+          @if (pickingCustomTime()) {
+            <div class="time-row">
+              <div class="field">
+                <label for="schedule-date">Date</label>
+                <input
+                  id="schedule-date"
+                  type="date"
+                  [attr.min]="minScheduleDate"
+                  [formField]="locationForm.scheduleDate"
+                  [attr.aria-invalid]="showError(locationForm.scheduleDate())"
+                  [attr.aria-describedby]="
+                    showError(locationForm.scheduleDate()) ? 'schedule-date-error' : null
+                  "
+                />
+                @if (showError(locationForm.scheduleDate())) {
+                  <p id="schedule-date-error" class="error" role="alert">
+                    {{ firstError(locationForm.scheduleDate().errors()) }}
+                  </p>
+                }
+              </div>
+              <div class="field">
+                <label for="schedule-time">Starting time</label>
+                <select
+                  id="schedule-time"
+                  [formField]="locationForm.scheduleTime"
+                  [attr.aria-invalid]="showError(locationForm.scheduleTime())"
+                  [attr.aria-describedby]="
+                    showError(locationForm.scheduleTime()) ? 'schedule-time-error' : null
+                  "
+                >
+                  <option value="">Choose a time</option>
+                  @for (option of scheduleTimeOptions; track option.value) {
+                    <option [value]="option.value">{{ option.label }}</option>
+                  }
+                </select>
+                @if (showError(locationForm.scheduleTime())) {
+                  <p id="schedule-time-error" class="error" role="alert">
+                    {{ firstError(locationForm.scheduleTime().errors()) }}
+                  </p>
+                }
+              </div>
+            </div>
+          }
+
+          <div class="field">
+            <label for="notes">Notes <span class="optional">(optional)</span></label>
+            <textarea
+              id="notes"
+              rows="3"
+              [formField]="locationForm.notes"
+              [attr.aria-invalid]="showError(locationForm.notes())"
+              [attr.aria-describedby]="showError(locationForm.notes()) ? 'notes-error' : 'notes-hint'"
+            ></textarea>
+            <p id="notes-hint" class="hint">Anything else the mechanic should know before arriving.</p>
+            @if (showError(locationForm.notes())) {
+              <p id="notes-error" class="error" role="alert">
+                {{ firstError(locationForm.notes().errors()) }}
+              </p>
+            }
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" (click)="back()">Back</button>
+            <button class="btn btn-primary btn-lg" type="submit" [disabled]="locationForm().submitting()">
+              Continue
+            </button>
+          </div>
+        </form>
+      }
+
+      @case ('contact') {
+        <h1 id="request-heading" #stepHeading tabindex="-1">How can we reach you?</h1>
+        <p class="lede">We will confirm your mobile number before the request is sent.</p>
+
+        <form class="card" (submit)="saveContact($event)" novalidate>
+          <div class="field">
+            <label for="full-name">Your name</label>
+            <input
+              id="full-name"
+              type="text"
+              autocomplete="name"
+              [formField]="contactForm.fullName"
+              [attr.aria-invalid]="showError(contactForm.fullName())"
+              [attr.aria-describedby]="showError(contactForm.fullName()) ? 'name-error' : null"
+            />
+            @if (showError(contactForm.fullName())) {
+              <p id="name-error" class="error" role="alert">
+                {{ firstError(contactForm.fullName().errors()) }}
+              </p>
+            }
+          </div>
+
+          <div class="field">
+            <label for="mobile">Mobile number</label>
+            <input
+              id="mobile"
+              type="tel"
+              inputmode="tel"
+              autocomplete="tel"
+              spellcheck="false"
+              [formField]="contactForm.mobile"
+              [attr.aria-invalid]="showError(contactForm.mobile())"
+              [attr.aria-describedby]="showError(contactForm.mobile()) ? 'mobile-error' : 'mobile-hint'"
+            />
+            <p id="mobile-hint" class="hint">Include country code, for example +92 300 1234567.</p>
+            @if (showError(contactForm.mobile())) {
+              <p id="mobile-error" class="error" role="alert">
+                {{ firstError(contactForm.mobile().errors()) }}
+              </p>
+            }
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" (click)="back()">Back</button>
+            <button class="btn btn-primary btn-lg" type="submit" [disabled]="contactForm().submitting()">
+              {{ contactActionLabel() }}
+            </button>
+          </div>
+        </form>
+      }
+
+      @case ('otp') {
+        <h1 id="request-heading" #stepHeading tabindex="-1">Enter your confirmation code</h1>
+        <p class="lede">
+          Confirm the mobile number ending in {{ maskedMobile() }}. SMS delivery is not connected
+          yet, so use the code shown below.
+        </p>
+
+        <p class="code-panel" aria-live="polite">
+          <span class="code-label">Confirmation code</span>
+          <span class="code-value">{{ issuedCode() }}</span>
+        </p>
+
+        <form class="card" (submit)="confirmCode($event)" novalidate>
+          <div class="field">
+            <label for="otp">6-digit code</label>
+            <input
+              id="otp"
+              type="text"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              spellcheck="false"
+              [formField]="otpForm.code"
+              [attr.aria-invalid]="showError(otpForm.code())"
+              [attr.aria-describedby]="showError(otpForm.code()) ? 'otp-error' : null"
+            />
+            @if (showError(otpForm.code())) {
+              <p id="otp-error" class="error" role="alert">
+                {{ firstError(otpForm.code().errors()) }}
+              </p>
+            }
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" (click)="back()">Back</button>
+            <button class="btn btn-primary btn-lg" type="submit" [disabled]="otpForm().submitting()">
+              Confirm mobile number
+            </button>
+          </div>
+        </form>
+
+        <div class="secondary-actions">
+          <button class="text-button" type="button" (click)="resendCode()">Resend code</button>
+          <button class="text-button" type="button" (click)="changeNumber()">
+            Use a different number
+          </button>
+        </div>
+      }
+
+      @case ('review') {
+        <h1 id="request-heading" #stepHeading tabindex="-1">Review your request</h1>
+        <p class="lede">
+          Check each section before you send it. Use Edit to go back and change a group of details.
+        </p>
+
+        <div class="summary">
+          <section class="summary-card" aria-labelledby="summary-help">
+            <div class="summary-heading">
+              <h2 id="summary-help">Help needed</h2>
+              <button
+                class="btn btn-secondary summary-edit"
+                type="button"
+                (click)="edit('kind')"
+                aria-label="Edit type of help"
+              >
+                Edit
+              </button>
+            </div>
+            <dl>
+              <div>
+                <dt>Type</dt>
+                <dd>{{ helpKindTitle() }}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="summary-card" aria-labelledby="summary-service">
+            <div class="summary-heading">
+              <h2 id="summary-service">Service</h2>
+              <button
+                class="btn btn-secondary summary-edit"
+                type="button"
+                (click)="edit('service')"
+                aria-label="Edit service"
+              >
+                Edit
+              </button>
+            </div>
+            <dl>
+              <div>
+                <dt>Requested service</dt>
+                <dd>{{ selectedServiceTitle() }}</dd>
+              </div>
+              @if (otherIssueSelected() && draft().otherDetails) {
+                <div>
+                  <dt>Details</dt>
+                  <dd class="summary-long">{{ draft().otherDetails }}</dd>
+                </div>
+              }
+            </dl>
+          </section>
+
+          <section class="summary-card" aria-labelledby="summary-vehicle">
+            <div class="summary-heading">
+              <h2 id="summary-vehicle">Vehicle</h2>
+              <button
+                class="btn btn-secondary summary-edit"
+                type="button"
+                (click)="edit('vehicle')"
+                aria-label="Edit vehicle"
+              >
+                Edit
+              </button>
+            </div>
+            <dl>
+              <div>
+                <dt>Vehicle</dt>
+                <dd>{{ vehicleTitle() }}</dd>
+              </div>
+              @if (draft().vehicleDetail) {
+                <div>
+                  <dt>Make and model</dt>
+                  <dd>{{ draft().vehicleDetail }}</dd>
+                </div>
+              }
+            </dl>
+          </section>
+
+          <section class="summary-card" aria-labelledby="summary-location">
+            <div class="summary-heading">
+              <h2 id="summary-location">Location</h2>
+              <button
+                class="btn btn-secondary summary-edit"
+                type="button"
+                (click)="edit('location')"
+                aria-label="Edit location"
+              >
+                Edit
+              </button>
+            </div>
+            <dl>
+              <div>
+                <dt>City</dt>
+                <dd>{{ draft().city }}</dd>
+              </div>
+              <div>
+                <dt>Place</dt>
+                <dd class="summary-long">{{ draft().location }}</dd>
+              </div>
+              @if (whenSummary()) {
+                <div>
+                  <dt>When</dt>
+                  <dd>{{ whenSummary() }}</dd>
+                </div>
+              }
+              @if (draft().notes) {
+                <div>
+                  <dt>Notes</dt>
+                  <dd class="summary-long">{{ draft().notes }}</dd>
+                </div>
+              }
+            </dl>
+          </section>
+
+          <section class="summary-card" aria-labelledby="summary-contact">
+            <div class="summary-heading">
+              <h2 id="summary-contact">Contact</h2>
+              <button
+                class="btn btn-secondary summary-edit"
+                type="button"
+                (click)="edit('contact')"
+                aria-label="Edit contact details"
+              >
+                Edit
+              </button>
+            </div>
+            <dl>
+              <div>
+                <dt>Name</dt>
+                <dd>{{ draft().fullName }}</dd>
+              </div>
+              <div>
+                <dt>Mobile</dt>
+                <dd>{{ maskedMobile() }}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" (click)="back()">Back</button>
+            <button class="btn btn-primary btn-lg" type="button" (click)="submitRequest()">
+              Send request
+            </button>
+          </div>
+        </div>
+      }
+
+      @case ('submitted') {
+        <p class="eyebrow">Request received</p>
+        <h1 id="request-heading" #stepHeading tabindex="-1">Help is on the way</h1>
+        <p class="lede">
+          We received your request. MechReach will use these details to connect you with a mechanic
+          when the service is live in your area.
+        </p>
+        <p class="code-panel">
+          <span class="code-label">Request reference</span>
+          <span class="code-value is-reference">{{ draft().reference }}</span>
+        </p>
+        @if (maskedMobile()) {
+          <p class="call-note">We will call {{ maskedMobile() }} to match you with a mechanic.</p>
+        }
+        <div class="actions submitted-actions">
+          <button class="btn btn-primary btn-lg" type="button" (click)="startAnother()">
+            Request another
+          </button>
+          <a class="btn btn-secondary" routerLink="/">Back to home</a>
+        </div>
+      }
+    }
+  </div>
+</section>

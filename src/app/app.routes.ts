@@ -14,6 +14,17 @@ export const routes: Routes = [
       import('./pages/mechanic-join/mechanic-join').then((module) => module.MechanicJoin),
   },
   {
+    path: 'request',
+    title: 'Request a Mechanic | MechReach',
+    loadComponent: () =>
+      import('./pages/customer-request/customer-request').then((module) => module.CustomerRequest),
+  },
+  {
+    path: 'request-a-mechanic',
+    redirectTo: '/request',
+    pathMatch: 'full',
+  },
+  {
     path: 'become-a-mechanic',
     redirectTo: '/mechanic/join',
     pathMatch: 'full',
