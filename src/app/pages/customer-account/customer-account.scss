@@ -1,0 +1,66 @@
+:host {
+  display: block;
+}
+
+.account {
+  padding-block: clamp(2.5rem, 7vw, 4.5rem) clamp(3.5rem, 8vw, 5.5rem);
+  background: var(--color-hero-bg);
+}
+
+.account-shell {
+  max-width: var(--container-narrow);
+}
+
+.account h1 {
+  max-width: 18ch;
+  font-size: var(--font-size-2xl);
+}
+
+.lede {
+  margin-top: var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+}
+
+.card {
+  display: grid;
+  gap: var(--space-5);
+  margin-top: var(--space-7);
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.card dl,
+.card dl > div {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.card dl > div {
+  gap: var(--space-1);
+}
+
+.card dt {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.card dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.account .btn-lg {
+  justify-self: start;
+}

@@ -28,14 +28,14 @@
       aria-label="Primary"
     >
       <ul class="nav-list">
-        @for (link of navLinks; track link.id) {
+        @for (link of navLinks(); track link.id) {
           <li>
             <a
               class="nav-link"
               [routerLink]="link.routerLink"
               [fragment]="link.fragment"
-              [routerLinkActive]="link.id === 'become-a-mechanic' ? 'is-current' : ''"
-              [ariaCurrentWhenActive]="link.id === 'become-a-mechanic' ? 'page' : false"
+              [routerLinkActive]="link.fragment ? '' : 'is-current'"
+              [ariaCurrentWhenActive]="link.fragment ? false : 'page'"
               (click)="onNavClick()"
             >
               {{ link.label }}

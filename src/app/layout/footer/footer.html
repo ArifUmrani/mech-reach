@@ -50,7 +50,7 @@
     <nav aria-labelledby="footer-account-heading">
       <h2 id="footer-account-heading" class="footer-heading">Account</h2>
       <ul>
-        @for (link of accountLinks; track link.id) {
+        @for (link of accountLinks(); track link.id) {
           <li>
             <a
               [routerLink]="link.routerLink"

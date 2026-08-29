@@ -1,0 +1,108 @@
+<section class="signin" aria-labelledby="signin-heading">
+  <div class="container signin-shell">
+    <p class="eyebrow">Customer access</p>
+
+    @switch (step()) {
+      @case ('details') {
+        <h1 id="signin-heading" #stepHeading tabindex="-1">Continue with your mobile number</h1>
+        <p class="lede">
+          We will confirm the number with a one-time code. SMS delivery is not connected yet, so the
+          code will be shown on the next screen.
+        </p>
+
+        <form class="card" (submit)="continueWithMobile($event)" novalidate>
+          <div class="field">
+            <label for="full-name">Your name</label>
+            <input
+              id="full-name"
+              type="text"
+              autocomplete="name"
+              [formField]="detailsForm.fullName"
+              [attr.aria-invalid]="showError(detailsForm.fullName())"
+              [attr.aria-describedby]="showError(detailsForm.fullName()) ? 'name-error' : null"
+            />
+            @if (showError(detailsForm.fullName())) {
+              <p id="name-error" class="error" role="alert">
+                {{ firstError(detailsForm.fullName().errors()) }}
+              </p>
+            }
+          </div>
+
+          <div class="field">
+            <label for="mobile">Mobile number</label>
+            <input
+              id="mobile"
+              type="tel"
+              inputmode="tel"
+              autocomplete="tel"
+              spellcheck="false"
+              [formField]="detailsForm.mobile"
+              [attr.aria-invalid]="showError(detailsForm.mobile())"
+              [attr.aria-describedby]="showError(detailsForm.mobile()) ? 'mobile-error' : 'mobile-hint'"
+            />
+            <p id="mobile-hint" class="hint">Include country code, for example +92 300 1234567.</p>
+            @if (showError(detailsForm.mobile())) {
+              <p id="mobile-error" class="error" role="alert">
+                {{ firstError(detailsForm.mobile().errors()) }}
+              </p>
+            }
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-primary btn-lg" type="submit" [disabled]="detailsForm().submitting()">
+              Continue with mobile
+            </button>
+          </div>
+        </form>
+      }
+
+      @case ('otp') {
+        <h1 id="signin-heading" #stepHeading tabindex="-1">Enter your confirmation code</h1>
+        <p class="lede">
+          Confirm the mobile number ending in {{ maskedMobile() }}. SMS delivery is not connected
+          yet, so use the code shown below.
+        </p>
+
+        <p class="code-panel" aria-live="polite">
+          <span class="code-label">Confirmation code</span>
+          <span class="code-value">{{ issuedCode() }}</span>
+        </p>
+
+        <form class="card" (submit)="confirmCode($event)" novalidate>
+          <div class="field">
+            <label for="otp">6-digit code</label>
+            <input
+              id="otp"
+              type="text"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              spellcheck="false"
+              [formField]="otpForm.code"
+              [attr.aria-invalid]="showError(otpForm.code())"
+              [attr.aria-describedby]="showError(otpForm.code()) ? 'otp-error' : null"
+            />
+            @if (showError(otpForm.code())) {
+              <p id="otp-error" class="error" role="alert">
+                {{ firstError(otpForm.code().errors()) }}
+              </p>
+            }
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" (click)="changeNumber()">Back</button>
+            <button class="btn btn-primary btn-lg" type="submit" [disabled]="otpForm().submitting()">
+              Confirm mobile number
+            </button>
+          </div>
+        </form>
+
+        <div class="secondary-actions">
+          <button class="text-button" type="button" (click)="resendCode()">Resend code</button>
+          <button class="text-button" type="button" (click)="changeNumber()">
+            Use a different number
+          </button>
+        </div>
+      }
+    }
+  </div>
+</section>
