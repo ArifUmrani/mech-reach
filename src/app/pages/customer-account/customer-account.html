@@ -22,6 +22,48 @@
           <button class="btn btn-secondary" type="button" (click)="signOut()">Sign out</button>
         </div>
       </div>
+
+      <section class="requests" aria-labelledby="requests-heading">
+        <h2 id="requests-heading">Requests this session</h2>
+
+        @if (requests().length === 0) {
+          <p class="empty">No requests in this session yet.</p>
+          <a class="btn btn-primary" routerLink="/request">Request help</a>
+        } @else {
+          <ul class="request-list">
+            @for (item of requests(); track item.reference + item.submittedAt) {
+              <li>
+                <article class="request-card" [attr.aria-labelledby]="'request-' + item.reference">
+                  <p class="request-ref">{{ item.reference }}</p>
+                  <h3 [id]="'request-' + item.reference">{{ item.serviceTitle }}</h3>
+                  <dl>
+                    <div>
+                      <dt>Type</dt>
+                      <dd>{{ item.kindLine }}</dd>
+                    </div>
+                    <div>
+                      <dt>Vehicle</dt>
+                      <dd>{{ item.vehicleLine }}</dd>
+                    </div>
+                    <div>
+                      <dt>City</dt>
+                      <dd>{{ item.city }}</dd>
+                    </div>
+                    <div>
+                      <dt>When</dt>
+                      <dd>{{ item.whenLabel }}</dd>
+                    </div>
+                    <div>
+                      <dt>Placed</dt>
+                      <dd>{{ item.placedLabel }}</dd>
+                    </div>
+                  </dl>
+                </article>
+              </li>
+            }
+          </ul>
+        }
+      </section>
     }
   </div>
 </section>

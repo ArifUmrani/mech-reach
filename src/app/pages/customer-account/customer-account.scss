@@ -64,3 +64,70 @@
 .account .btn-lg {
   justify-self: start;
 }
+
+.requests {
+  margin-top: var(--space-8);
+}
+
+.requests h2 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.empty {
+  margin: var(--space-4) 0 var(--space-5);
+  color: var(--color-text-secondary);
+}
+
+.request-list {
+  display: grid;
+  gap: var(--space-4);
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.request-card {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.request-ref {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.06em;
+}
+
+.request-card h3 {
+  margin: 0;
+  font-size: var(--font-size-md);
+}
+
+.request-card dl,
+.request-card dl > div {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.request-card dl > div {
+  gap: var(--space-1);
+}
+
+.request-card dt {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.request-card dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

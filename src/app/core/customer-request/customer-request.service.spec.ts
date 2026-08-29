@@ -1,4 +1,8 @@
 import { TestBed } from '@angular/core/testing';
+import { CUSTOMER_SESSION_STORAGE_KEY } from '../customer-auth/customer-auth.model';
+import { CustomerAuthService } from '../customer-auth/customer-auth.service';
+import { CUSTOMER_REQUEST_HISTORY_STORAGE_KEY } from './customer-request-history.model';
+import { CustomerRequestHistoryService } from './customer-request-history.service';
 import { CustomerRequestService } from './customer-request.service';
 import {
   createRequestReference,
@@ -33,6 +37,16 @@ describe('request catalog helpers', () => {
 });
 
 describe('CustomerRequestService', () => {
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+    sessionStorage.removeItem(CUSTOMER_SESSION_STORAGE_KEY);
+    sessionStorage.removeItem(CUSTOMER_REQUEST_HISTORY_STORAGE_KEY);
+  });
+
+  afterEach(() => {
+    sessionStorage.removeItem(CUSTOMER_SESSION_STORAGE_KEY);
+    sessionStorage.removeItem(CUSTOMER_REQUEST_HISTORY_STORAGE_KEY);
+  });
   it('verifies a freshly generated code and rejects a mismatch', () => {
     TestBed.configureTestingModule({});
     const service = TestBed.inject(CustomerRequestService);
@@ -51,12 +65,38 @@ describe('CustomerRequestService', () => {
 
     expect(service.submitted()).toBe(true);
     expect(service.draft().reference).toMatch(/^MR-\d{4}$/);
+    expect(sessionStorage.getItem(CUSTOMER_REQUEST_HISTORY_STORAGE_KEY)).toBeNull();
 
     service.reset();
     expect(service.submitted()).toBe(false);
     expect(service.draft().city).toBe('');
     expect(service.draft().reference).toBe('');
     expect(service.draft().mobileVerified).toBe(false);
+  });
+
+  it('stores a snapshot for a signed-in matching mobile', () => {
+    sessionStorage.removeItem(CUSTOMER_SESSION_STORAGE_KEY);
+    sessionStorage.removeItem(CUSTOMER_REQUEST_HISTORY_STORAGE_KEY);
+    TestBed.configureTestingModule({});
+    const auth = TestBed.inject(CustomerAuthService);
+    const history = TestBed.inject(CustomerRequestHistoryService);
+    const service = TestBed.inject(CustomerRequestService);
+    const challenge = auth.requestOtp('Arif', '+92 300 1234567');
+    expect(auth.verifyOtp(challenge.code)).toBe('ok');
+
+    service.patch({
+      helpKind: 'roadside',
+      serviceId: 'battery-jump-start',
+      vehicleKind: 'car',
+      city: 'Karachi',
+      mobile: '+923001234567',
+    });
+    service.submitRequest();
+
+    expect(history.items()).toHaveLength(1);
+    expect(history.items()[0]?.city).toBe('Karachi');
+    sessionStorage.removeItem(CUSTOMER_SESSION_STORAGE_KEY);
+    sessionStorage.removeItem(CUSTOMER_REQUEST_HISTORY_STORAGE_KEY);
   });
 });
 

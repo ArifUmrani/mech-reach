@@ -1,5 +1,6 @@
-import { Service, signal } from '@angular/core';
+import { inject, Service, signal } from '@angular/core';
 import { maskMobile, normalizeMobile } from '../mechanic-join/mobile';
+import { CustomerRequestHistoryService } from './customer-request-history.service';
 import {
   createRequestReference,
   CustomerRequestDraft,
@@ -19,6 +20,7 @@ const OTP_LENGTH = 6;
 
 @Service()
 export class CustomerRequestService {
+  private readonly history = inject(CustomerRequestHistoryService);
   private readonly draftState = signal<CustomerRequestDraft>(emptyRequestDraft());
   private readonly challenge = signal<OtpChallenge | null>(null);
   private readonly submittedState = signal(false);
@@ -71,6 +73,7 @@ export class CustomerRequestService {
       reference: draft.reference || createRequestReference(),
     }));
     this.submittedState.set(true);
+    this.history.record(this.draftState());
   }
 
   reset(): void {
