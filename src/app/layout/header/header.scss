@@ -87,6 +87,10 @@
   text-decoration: none;
 }
 
+.nav-link.is-current {
+  font-weight: var(--font-weight-semibold);
+}
+
 .nav-link:hover {
   background: var(--color-surface-muted);
   text-decoration: none;

@@ -1,0 +1,968 @@
+<section class="join" aria-labelledby="join-heading">
+  <div class="container join-shell">
+    @if (step() !== 'submitted') {
+      <p class="eyebrow">Become a mechanic</p>
+      <p class="progress-label" id="join-progress-label">
+        Step {{ formStepNumber() }} of {{ formStepCount }}
+      </p>
+      <div
+        class="progress"
+        role="progressbar"
+        aria-labelledby="join-progress-label"
+        [attr.aria-valuenow]="formStepNumber()"
+        aria-valuemin="1"
+        [attr.aria-valuemax]="formStepCount"
+      >
+        <div class="progress-fill" [style.width.%]="progressPercent()"></div>
+      </div>
+    }
+
+    @switch (step()) {
+      @case ('mobile') {
+        <h1 id="join-heading" #stepHeading tabindex="-1">Confirm your mobile number</h1>
+        <p class="lede">
+          Start with the number we can use to reach you. We will confirm it with a one-time code
+          before you continue.
+        </p>
+
+        <form class="card" (submit)="sendCode($event)" novalidate>
+          <div class="field">
+            <label for="mobile">Mobile number</label>
+            <input
+              id="mobile"
+              type="tel"
+              inputmode="tel"
+              autocomplete="tel"
+              spellcheck="false"
+              [formField]="mobileForm.mobile"
+              [attr.aria-invalid]="showError(mobileForm.mobile())"
+              [attr.aria-describedby]="showError(mobileForm.mobile()) ? 'mobile-error' : 'mobile-hint'"
+            />
+            <p id="mobile-hint" class="hint">Include country code, for example +92 300 1234567.</p>
+            @if (showError(mobileForm.mobile())) {
+              <p id="mobile-error" class="error" role="alert">
+                {{ firstError(mobileForm.mobile().errors()) }}
+              </p>
+            }
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-primary btn-lg" type="submit" [disabled]="mobileForm().submitting()">
+              Send confirmation code
+            </button>
+          </div>
+        </form>
+      }
+
+      @case ('otp') {
+        <h1 id="join-heading" #stepHeading tabindex="-1">Enter your confirmation code</h1>
+        <p class="lede">
+          Confirm the mobile number ending in {{ maskedMobile() }}. SMS delivery is not connected
+          yet, so use the code shown below.
+        </p>
+
+        <p class="code-panel" aria-live="polite">
+          <span class="code-label">Confirmation code</span>
+          <span class="code-value">{{ issuedCode() }}</span>
+        </p>
+
+        <form class="card" (submit)="confirmCode($event)" novalidate>
+          <div class="field">
+            <label for="otp">6-digit code</label>
+            <input
+              id="otp"
+              type="text"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              spellcheck="false"
+              [formField]="otpForm.code"
+              [attr.aria-invalid]="showError(otpForm.code())"
+              [attr.aria-describedby]="showError(otpForm.code()) ? 'otp-error' : null"
+            />
+            @if (showError(otpForm.code())) {
+              <p id="otp-error" class="error" role="alert">{{ firstError(otpForm.code().errors()) }}</p>
+            }
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" (click)="back()">Back</button>
+            <button class="btn btn-primary btn-lg" type="submit" [disabled]="otpForm().submitting()">
+              Confirm mobile number
+            </button>
+          </div>
+        </form>
+
+        <div class="secondary-actions">
+          <button class="text-button" type="button" (click)="resendCode()">Resend code</button>
+          <button class="text-button" type="button" (click)="changeNumber()">
+            Use a different number
+          </button>
+        </div>
+      }
+
+      @case ('profile') {
+        <h1 id="join-heading" #stepHeading tabindex="-1">Your profile</h1>
+        <p class="lede">Add your name. A photo and email are optional.</p>
+
+        <form class="card" (submit)="saveProfile($event)" novalidate>
+          <div class="field">
+            <label for="full-name">Full name</label>
+            <input
+              id="full-name"
+              type="text"
+              autocomplete="name"
+              spellcheck="false"
+              [formField]="profileForm.fullName"
+              [attr.aria-invalid]="showError(profileForm.fullName())"
+              [attr.aria-describedby]="showError(profileForm.fullName()) ? 'full-name-error' : null"
+            />
+            @if (showError(profileForm.fullName())) {
+              <p id="full-name-error" class="error" role="alert">
+                {{ firstError(profileForm.fullName().errors()) }}
+              </p>
+            }
+          </div>
+
+          <div class="field">
+            <label for="email">Email <span class="optional">(optional)</span></label>
+            <input
+              id="email"
+              type="email"
+              autocomplete="email"
+              spellcheck="false"
+              [formField]="profileForm.email"
+              [attr.aria-invalid]="showError(profileForm.email())"
+              [attr.aria-describedby]="showError(profileForm.email()) ? 'email-error' : 'email-hint'"
+            />
+            <p id="email-hint" class="hint">Leave this blank if you prefer to be reached by mobile.</p>
+            @if (showError(profileForm.email())) {
+              <p id="email-error" class="error" role="alert">
+                {{ firstError(profileForm.email().errors()) }}
+              </p>
+            }
+          </div>
+
+          <div class="field">
+            <label for="photo">Profile photo <span class="optional">(optional)</span></label>
+            <input
+              id="photo"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              (change)="onPhotoSelected($event)"
+              [attr.aria-invalid]="uploadError() ? true : null"
+              [attr.aria-describedby]="uploadError() ? 'photo-error' : 'photo-hint'"
+            />
+            <p id="photo-hint" class="hint">JPEG, PNG, or WebP. Keep the file under 5 MB.</p>
+            @if (uploadError()) {
+              <p id="photo-error" class="error" role="alert">{{ uploadError() }}</p>
+            }
+            @if (draft().photo; as photo) {
+              <div class="upload-preview">
+                @if (photo.previewUrl) {
+                  <img [src]="photo.previewUrl" alt="Preview of the profile photo you selected" width="96" height="96" />
+                }
+                <p>{{ photo.name }} · {{ fileSizeLabel(photo.size) }}</p>
+                <button class="text-button" type="button" (click)="clearPhoto()">Remove photo</button>
+              </div>
+            }
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" (click)="back()">Back</button>
+            <button class="btn btn-primary btn-lg" type="submit" [disabled]="profileForm().submitting()">
+              Continue
+            </button>
+          </div>
+        </form>
+      }
+
+      @case ('practice') {
+        <h1 id="join-heading" #stepHeading tabindex="-1">How you work</h1>
+        <p class="lede">Choose whether you take jobs on your own or with a workshop.</p>
+
+        <form class="card" (submit)="continuePractice($event)">
+          <fieldset [attr.aria-describedby]="choiceError() ? 'practice-error' : null">
+            <legend class="visually-hidden">How you work</legend>
+            <div class="choice-list">
+              @for (option of practiceOptions; track option.value) {
+                <label class="choice" [class.is-selected]="draft().practiceKind === option.value">
+                  <input
+                    type="radio"
+                    name="practice"
+                    [value]="option.value"
+                    [checked]="draft().practiceKind === option.value"
+                    (change)="selectPractice(option.value)"
+                  />
+                  <span>
+                    <span class="choice-title">{{ option.title }}</span>
+                    <span class="choice-desc">{{ option.description }}</span>
+                  </span>
+                </label>
+              }
+            </div>
+          </fieldset>
+          @if (choiceError()) {
+            <p id="practice-error" class="error" role="alert">{{ choiceError() }}</p>
+          }
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" (click)="back()">Back</button>
+            <button class="btn btn-primary btn-lg" type="submit">Continue</button>
+          </div>
+        </form>
+      }
+
+      @case ('experience') {
+        <h1 id="join-heading" #stepHeading tabindex="-1">Experience</h1>
+        <p class="lede">
+          @if (draft().practiceKind === 'workshop') {
+            Add the workshop name and how long you have been doing this work.
+          } @else {
+            How long have you been doing this work?
+          }
+        </p>
+
+        <form class="card" (submit)="saveExperience($event)" novalidate>
+          @if (draft().practiceKind === 'workshop') {
+            <div class="field">
+              <label for="workshop-name">Workshop name</label>
+              <input
+                id="workshop-name"
+                type="text"
+                autocomplete="organization"
+                spellcheck="false"
+                [formField]="experienceForm.workshopName"
+                [attr.aria-invalid]="showError(experienceForm.workshopName())"
+                [attr.aria-describedby]="
+                  showError(experienceForm.workshopName()) ? 'workshop-name-error' : null
+                "
+              />
+              @if (showError(experienceForm.workshopName())) {
+                <p id="workshop-name-error" class="error" role="alert">
+                  {{ firstError(experienceForm.workshopName().errors()) }}
+                </p>
+              }
+            </div>
+          }
+
+          <div class="field">
+            <label for="years">Years of experience</label>
+            <input
+              id="years"
+              type="text"
+              inputmode="numeric"
+              spellcheck="false"
+              [formField]="experienceForm.yearsExperience"
+              [attr.aria-invalid]="showError(experienceForm.yearsExperience())"
+              [attr.aria-describedby]="
+                showError(experienceForm.yearsExperience()) ? 'years-error' : 'years-hint'
+              "
+            />
+            <p id="years-hint" class="hint">Use a whole number from 0 to 50.</p>
+            @if (showError(experienceForm.yearsExperience())) {
+              <p id="years-error" class="error" role="alert">
+                {{ firstError(experienceForm.yearsExperience().errors()) }}
+              </p>
+            }
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" (click)="back()">Back</button>
+            <button
+              class="btn btn-primary btn-lg"
+              type="submit"
+              [disabled]="experienceForm().submitting()"
+            >
+              Continue
+            </button>
+          </div>
+        </form>
+      }
+
+      @case ('vehicles') {
+        <h1 id="join-heading" #stepHeading tabindex="-1">Vehicles you service</h1>
+        <p class="lede">Choose the vehicles you can take jobs for.</p>
+
+        <form class="card" (submit)="continueVehicles($event)">
+          <fieldset [attr.aria-describedby]="choiceError() ? 'vehicles-error' : null">
+            <legend class="visually-hidden">Vehicles you service</legend>
+            <div class="choice-list">
+              @for (option of vehicleOptions; track option.value) {
+                <label class="choice" [class.is-selected]="draft().vehicleKind === option.value">
+                  <input
+                    type="radio"
+                    name="vehicles"
+                    [value]="option.value"
+                    [checked]="draft().vehicleKind === option.value"
+                    (change)="selectVehicle(option.value)"
+                  />
+                  <span>
+                    <span class="choice-title">{{ option.title }}</span>
+                    <span class="choice-desc">{{ option.description }}</span>
+                  </span>
+                </label>
+              }
+            </div>
+          </fieldset>
+          @if (choiceError()) {
+            <p id="vehicles-error" class="error" role="alert">{{ choiceError() }}</p>
+          }
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" (click)="back()">Back</button>
+            <button class="btn btn-primary btn-lg" type="submit">Continue</button>
+          </div>
+        </form>
+      }
+
+      @case ('services') {
+        <h1 id="join-heading" #stepHeading tabindex="-1">Services you offer</h1>
+        <p class="lede">Select every service you can take on. Choose at least one.</p>
+
+        <form class="card" (submit)="continueServices($event)" novalidate>
+          <div class="service-groups" [attr.aria-describedby]="choiceError() ? 'services-error' : null">
+            @for (category of serviceCategories; track category.id) {
+              <fieldset>
+                <legend>{{ category.title }}</legend>
+                <div class="choice-list">
+                  @for (service of category.services; track service.id) {
+                    <label class="choice choice-compact" [class.is-selected]="isSelectedService(service.id)">
+                      <input
+                        type="checkbox"
+                        [checked]="isSelectedService(service.id)"
+                        (click)="$event.preventDefault(); toggleService(service.id)"
+                      />
+                      <span class="choice-title">{{ service.title }}</span>
+                    </label>
+                  }
+                </div>
+              </fieldset>
+            }
+            <fieldset>
+              <legend class="visually-hidden">Other skills</legend>
+              <label
+                class="choice choice-compact"
+                [class.is-selected]="otherServicesSelected()"
+              >
+                <input
+                  type="checkbox"
+                  [checked]="otherServicesSelected()"
+                  [attr.aria-controls]="otherServicesSelected() ? 'other-services' : null"
+                  (click)="$event.preventDefault(); toggleService(otherServiceId)"
+                />
+                <span class="choice-title">Others</span>
+              </label>
+              @if (otherServicesSelected()) {
+                <div class="field">
+                  <label for="other-services">Describe your other skills</label>
+                  <textarea
+                    id="other-services"
+                    rows="4"
+                    [formField]="servicesForm.otherServices"
+                    [attr.aria-invalid]="showError(servicesForm.otherServices())"
+                    [attr.aria-describedby]="
+                      showError(servicesForm.otherServices()) ? 'other-services-error' : 'other-services-hint'
+                    "
+                  ></textarea>
+                  <p id="other-services-hint" class="hint">
+                    Skills or jobs you take that are not listed above.
+                  </p>
+                  @if (showError(servicesForm.otherServices())) {
+                    <p id="other-services-error" class="error" role="alert">
+                      {{ firstError(servicesForm.otherServices().errors()) }}
+                    </p>
+                  }
+                </div>
+              }
+            </fieldset>
+          </div>
+          @if (choiceError()) {
+            <p id="services-error" class="error" role="alert">{{ choiceError() }}</p>
+          }
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" (click)="back()">Back</button>
+            <button
+              class="btn btn-primary btn-lg"
+              type="submit"
+              [disabled]="servicesForm().submitting()"
+            >
+              Continue
+            </button>
+          </div>
+        </form>
+      }
+
+      @case ('coverage') {
+        <h1 id="join-heading" #stepHeading tabindex="-1">Where you help</h1>
+        <p class="lede">Choose roadside emergencies, doorstep services, or both.</p>
+
+        <form class="card" (submit)="continueCoverage($event)">
+          <fieldset [attr.aria-describedby]="choiceError() ? 'coverage-error' : null">
+            <legend class="visually-hidden">Where you help</legend>
+            <div class="choice-list">
+              @for (option of coverageOptions; track option.value) {
+                <label class="choice" [class.is-selected]="draft().coverageKind === option.value">
+                  <input
+                    type="radio"
+                    name="coverage"
+                    [value]="option.value"
+                    [checked]="draft().coverageKind === option.value"
+                    (change)="selectCoverage(option.value)"
+                  />
+                  <span>
+                    <span class="choice-title">{{ option.title }}</span>
+                    <span class="choice-desc">{{ option.description }}</span>
+                  </span>
+                </label>
+              }
+            </div>
+          </fieldset>
+          @if (choiceError()) {
+            <p id="coverage-error" class="error" role="alert">{{ choiceError() }}</p>
+          }
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" (click)="back()">Back</button>
+            <button class="btn btn-primary btn-lg" type="submit">Continue</button>
+          </div>
+        </form>
+      }
+
+      @case ('location') {
+        <h1 id="join-heading" #stepHeading tabindex="-1">Service area</h1>
+        <p class="lede">Tell us where you can take jobs and how far you can travel.</p>
+
+        <form class="card" (submit)="saveLocation($event)" novalidate>
+          <div class="field">
+            <label for="city">City</label>
+            <input
+              id="city"
+              type="text"
+              autocomplete="address-level2"
+              spellcheck="false"
+              [formField]="locationForm.city"
+              [attr.aria-invalid]="showError(locationForm.city())"
+              [attr.aria-describedby]="showError(locationForm.city()) ? 'city-error' : null"
+            />
+            @if (showError(locationForm.city())) {
+              <p id="city-error" class="error" role="alert">
+                {{ firstError(locationForm.city().errors()) }}
+              </p>
+            }
+          </div>
+
+          <div class="field">
+            <label for="areas">Areas you can cover</label>
+            <textarea
+              id="areas"
+              rows="4"
+              [formField]="locationForm.serviceAreas"
+              [attr.aria-invalid]="showError(locationForm.serviceAreas())"
+              [attr.aria-describedby]="
+                showError(locationForm.serviceAreas()) ? 'areas-error' : 'areas-hint'
+              "
+            ></textarea>
+            <p id="areas-hint" class="hint">Neighborhoods, roads, or nearby towns you can reach.</p>
+            @if (showError(locationForm.serviceAreas())) {
+              <p id="areas-error" class="error" role="alert">
+                {{ firstError(locationForm.serviceAreas().errors()) }}
+              </p>
+            }
+          </div>
+
+          <div class="field">
+            <label for="travel-km">Travel distance (km)</label>
+            <input
+              id="travel-km"
+              type="text"
+              inputmode="numeric"
+              spellcheck="false"
+              [formField]="locationForm.travelKm"
+              [attr.aria-invalid]="showError(locationForm.travelKm())"
+              [attr.aria-describedby]="showError(locationForm.travelKm()) ? 'travel-error' : 'travel-hint'"
+            />
+            <p id="travel-hint" class="hint">How far you can travel from your city, from 1 to 200 km.</p>
+            @if (showError(locationForm.travelKm())) {
+              <p id="travel-error" class="error" role="alert">
+                {{ firstError(locationForm.travelKm().errors()) }}
+              </p>
+            }
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" (click)="back()">Back</button>
+            <button class="btn btn-primary btn-lg" type="submit" [disabled]="locationForm().submitting()">
+              Continue
+            </button>
+          </div>
+        </form>
+      }
+
+      @case ('availability') {
+        <h1 id="join-heading" #stepHeading tabindex="-1">Availability</h1>
+        <p class="lede">Choose the days you can take jobs, then pick a clear hours option.</p>
+
+        <form class="card" (submit)="saveAvailability($event)" novalidate>
+          <fieldset [attr.aria-describedby]="choiceError() ? 'days-error' : null">
+            <legend>Days</legend>
+            <label class="choice choice-compact" [class.is-selected]="allDaysChecked()">
+              <input
+                type="checkbox"
+                [checked]="allDaysChecked()"
+                [indeterminate]="someDaysChecked()"
+                [attr.aria-checked]="allDaysAria()"
+                aria-controls="available-days"
+                (click)="$event.preventDefault(); toggleAllDays()"
+              />
+              <span>
+                <span class="choice-title">All days</span>
+                <span class="choice-desc">Select or clear every day of the week.</span>
+              </span>
+            </label>
+            <div id="available-days" class="day-list">
+              @for (day of weekdays; track day.id) {
+                <label class="choice choice-compact" [class.is-selected]="isSelectedDay(day.id)">
+                  <input
+                    type="checkbox"
+                    [checked]="isSelectedDay(day.id)"
+                    (click)="$event.preventDefault(); toggleDay(day.id)"
+                  />
+                  <span class="choice-title">{{ day.label }}</span>
+                </label>
+              }
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Hours</legend>
+            <div class="choice-list">
+              @for (option of hoursOptions; track option.value) {
+                <label class="choice" [class.is-selected]="draft().hoursKind === option.value">
+                  <input
+                    type="radio"
+                    name="hours-kind"
+                    [value]="option.value"
+                    [checked]="draft().hoursKind === option.value"
+                    (change)="selectHoursKind(option.value)"
+                  />
+                  <span>
+                    <span class="choice-title">{{ option.title }}</span>
+                    <span class="choice-desc">{{ option.description }}</span>
+                  </span>
+                </label>
+              }
+            </div>
+          </fieldset>
+
+          @if (draft().hoursKind === 'twelve-hour') {
+            <fieldset>
+              <legend>Starting time</legend>
+              <p class="hint" id="twelve-hour-hint">
+                Your window lasts 12 hours from the time you choose.
+              </p>
+              <div
+                class="start-list"
+                [attr.aria-describedby]="
+                  showError(availabilityForm.twelveHourStart()) ? 'twelve-hour-error' : 'twelve-hour-hint'
+                "
+              >
+                @for (option of twelveHourStarts; track option.value) {
+                  <label
+                    class="choice choice-compact"
+                    [class.is-selected]="availabilityModel().twelveHourStart === option.value"
+                  >
+                    <input
+                      type="radio"
+                      name="twelve-hour-start"
+                      [value]="option.value"
+                      [checked]="availabilityModel().twelveHourStart === option.value"
+                      (change)="selectTwelveHourStart(option.value)"
+                    />
+                    <span class="choice-title">{{ option.label }}</span>
+                  </label>
+                }
+              </div>
+              @if (showError(availabilityForm.twelveHourStart())) {
+                <p id="twelve-hour-error" class="error" role="alert">
+                  {{ firstError(availabilityForm.twelveHourStart().errors()) }}
+                </p>
+              }
+            </fieldset>
+          }
+
+          @if (draft().hoursKind === 'custom') {
+            <div class="time-row">
+              <div class="field">
+                <label for="available-from">Start</label>
+                <select
+                  id="available-from"
+                  [formField]="availabilityForm.availableFrom"
+                  [attr.aria-invalid]="showError(availabilityForm.availableFrom())"
+                  [attr.aria-describedby]="
+                    showError(availabilityForm.availableFrom()) ? 'from-error' : null
+                  "
+                >
+                  <option value="">Choose a time</option>
+                  @for (option of customTimeOptions; track option.value) {
+                    <option [value]="option.value">{{ option.label }}</option>
+                  }
+                </select>
+                @if (showError(availabilityForm.availableFrom())) {
+                  <p id="from-error" class="error" role="alert">
+                    {{ firstError(availabilityForm.availableFrom().errors()) }}
+                  </p>
+                }
+              </div>
+              <div class="field">
+                <label for="available-to">End</label>
+                <select
+                  id="available-to"
+                  [formField]="availabilityForm.availableTo"
+                  [attr.aria-invalid]="showError(availabilityForm.availableTo())"
+                  [attr.aria-describedby]="
+                    showError(availabilityForm.availableTo()) ? 'to-error' : 'to-hint'
+                  "
+                >
+                  <option value="">Choose a time</option>
+                  @for (option of customTimeOptions; track option.value) {
+                    <option [value]="option.value">{{ option.label }}</option>
+                  }
+                </select>
+                <p id="to-hint" class="hint">End time must be later on the same day.</p>
+                @if (showError(availabilityForm.availableTo())) {
+                  <p id="to-error" class="error" role="alert">
+                    {{ firstError(availabilityForm.availableTo().errors()) }}
+                  </p>
+                }
+              </div>
+            </div>
+          }
+
+          @if (choiceError()) {
+            <p id="days-error" class="error" role="alert">{{ choiceError() }}</p>
+          }
+
+          <p class="schedule-preview" aria-live="polite">
+            <span class="schedule-label">Selected schedule</span>
+            @if (draft().availableDays.length === 0 && !draft().hoursKind) {
+              <span>Choose days and hours to see your schedule.</span>
+            } @else {
+              <span>
+                {{ schedulePreview().days || 'No days selected' }}
+                @if (schedulePreview().hours) {
+                  · {{ schedulePreview().hours }}
+                }
+              </span>
+            }
+          </p>
+
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" (click)="back()">Back</button>
+            <button
+              class="btn btn-primary btn-lg"
+              type="submit"
+              [disabled]="availabilityForm().submitting()"
+            >
+              Continue
+            </button>
+          </div>
+        </form>
+      }
+
+      @case ('identity') {
+        <h1 id="join-heading" #stepHeading tabindex="-1">Identity document</h1>
+        <p class="lede">
+          Upload a national identity card or another government-issued ID. This stays on your device
+          until a review process is connected.
+        </p>
+
+        <form class="card" (submit)="continueIdentity($event)">
+          <div class="field">
+            <label for="identity">CNIC or government ID</label>
+            <input
+              id="identity"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,application/pdf"
+              (change)="onIdentitySelected($event)"
+              [attr.aria-invalid]="uploadError() ? true : null"
+              [attr.aria-describedby]="uploadError() ? 'identity-error' : 'identity-hint'"
+            />
+            <p id="identity-hint" class="hint">JPEG, PNG, WebP, or PDF. Keep the file under 5 MB.</p>
+            @if (uploadError()) {
+              <p id="identity-error" class="error" role="alert">{{ uploadError() }}</p>
+            }
+            @if (draft().identityDocument; as identity) {
+              <div class="upload-preview">
+                @if (identity.previewUrl) {
+                  <img
+                    [src]="identity.previewUrl"
+                    alt="Preview of the identity document you selected"
+                    width="96"
+                    height="96"
+                  />
+                }
+                <p>{{ identity.name }} · {{ fileSizeLabel(identity.size) }}</p>
+              </div>
+            }
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" (click)="back()">Back</button>
+            <button class="btn btn-primary btn-lg" type="submit">Continue</button>
+          </div>
+        </form>
+      }
+
+      @case ('terms') {
+        <h1 id="join-heading" #stepHeading tabindex="-1">Review terms</h1>
+        <p class="lede">
+          MechReach will review the details and identity document you submit. Sending this
+          application does not create a live mechanic account or guarantee that you will be listed
+          on the platform.
+        </p>
+
+        <form class="card" (submit)="continueTerms($event)">
+          <label class="choice choice-terms" [class.is-selected]="draft().termsAccepted">
+            <input
+              id="terms"
+              type="checkbox"
+              [checked]="draft().termsAccepted"
+              (change)="setTermsAccepted($event)"
+              [attr.aria-invalid]="choiceError() ? true : null"
+              [attr.aria-describedby]="choiceError() ? 'terms-error' : null"
+            />
+            <span>
+              I confirm this information is accurate and I want MechReach to review my application.
+            </span>
+          </label>
+          @if (choiceError()) {
+            <p id="terms-error" class="error" role="alert">{{ choiceError() }}</p>
+          }
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" (click)="back()">Back</button>
+            <button class="btn btn-primary btn-lg" type="submit">Continue to review</button>
+          </div>
+        </form>
+      }
+
+      @case ('review') {
+        <h1 id="join-heading" #stepHeading tabindex="-1">Review your application</h1>
+        <p class="lede">
+          Check each section before you send it. Use Edit to go back and change a group of details.
+        </p>
+
+        <div class="summary">
+          <section class="summary-card" aria-labelledby="summary-personal">
+            <div class="summary-heading">
+              <h2 id="summary-personal">Personal details</h2>
+              <button
+                class="btn btn-secondary summary-edit"
+                type="button"
+                (click)="edit('profile')"
+                aria-label="Edit personal details"
+              >
+                Edit
+              </button>
+            </div>
+            <dl>
+              <div>
+                <dt>Full name</dt>
+                <dd>{{ draft().fullName }}</dd>
+              </div>
+              <div>
+                <dt>Mobile</dt>
+                <dd>{{ maskedMobile() }}</dd>
+              </div>
+              <div>
+                <dt>Email</dt>
+                <dd>{{ draft().email || 'Not provided' }}</dd>
+              </div>
+              <div>
+                <dt>Photo</dt>
+                <dd class="summary-photo">
+                  @if (draft().photo; as photo) {
+                    @if (photo.previewUrl) {
+                      <img
+                        [src]="photo.previewUrl"
+                        alt="Preview of the profile photo you selected"
+                        width="64"
+                        height="64"
+                      />
+                    }
+                    <span class="summary-long">{{ photo.name }}</span>
+                  } @else {
+                    Not provided
+                  }
+                </dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="summary-card" aria-labelledby="summary-work">
+            <div class="summary-heading">
+              <h2 id="summary-work">Work details</h2>
+              <button
+                class="btn btn-secondary summary-edit"
+                type="button"
+                (click)="edit('practice')"
+                aria-label="Edit work details"
+              >
+                Edit
+              </button>
+            </div>
+            <dl>
+              <div>
+                <dt>Practice</dt>
+                <dd>{{ practiceLabel() }}</dd>
+              </div>
+              @if (draft().practiceKind === 'workshop') {
+                <div>
+                  <dt>Workshop name</dt>
+                  <dd class="summary-long">{{ draft().workshopName }}</dd>
+                </div>
+              }
+              <div>
+                <dt>Years of experience</dt>
+                <dd>{{ yearsLabel() }}</dd>
+              </div>
+              <div>
+                <dt>Vehicles</dt>
+                <dd>{{ vehicleLabel() }}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="summary-card" aria-labelledby="summary-services">
+            <div class="summary-heading">
+              <h2 id="summary-services">Services</h2>
+              <button
+                class="btn btn-secondary summary-edit"
+                type="button"
+                (click)="edit('services')"
+                aria-label="Edit services"
+              >
+                Edit
+              </button>
+            </div>
+            <div>
+              <p class="summary-label">Services offered</p>
+              <ul class="summary-chips">
+                @for (title of selectedServiceTitles(); track title) {
+                  <li>{{ title }}</li>
+                }
+              </ul>
+            </div>
+            @if (otherServicesSelected() && draft().otherServices) {
+              <div>
+                <p class="summary-label">Other skills</p>
+                <p class="summary-long">{{ draft().otherServices }}</p>
+              </div>
+            }
+          </section>
+
+          <section class="summary-card" aria-labelledby="summary-coverage">
+            <div class="summary-heading">
+              <h2 id="summary-coverage">Coverage</h2>
+              <button
+                class="btn btn-secondary summary-edit"
+                type="button"
+                (click)="edit('coverage')"
+                aria-label="Edit coverage"
+              >
+                Edit
+              </button>
+            </div>
+            <dl>
+              <div>
+                <dt>Job types</dt>
+                <dd>{{ coverageLabel() }}</dd>
+              </div>
+              <div>
+                <dt>City</dt>
+                <dd>{{ draft().city }}</dd>
+              </div>
+              <div>
+                <dt>Service areas</dt>
+                <dd class="summary-long">{{ draft().serviceAreas }}</dd>
+              </div>
+              <div>
+                <dt>Travel distance</dt>
+                <dd>Up to {{ draft().travelKm }} km</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="summary-card" aria-labelledby="summary-availability">
+            <div class="summary-heading">
+              <h2 id="summary-availability">Availability</h2>
+              <button
+                class="btn btn-secondary summary-edit"
+                type="button"
+                (click)="edit('availability')"
+                aria-label="Edit availability"
+              >
+                Edit
+              </button>
+            </div>
+            <div>
+              <p class="summary-label">Days</p>
+              @if (allDaysChecked()) {
+                <p>Every day</p>
+              } @else {
+                <ul class="summary-chips">
+                  @for (label of selectedDayLabels(); track label) {
+                    <li>{{ label }}</li>
+                  }
+                </ul>
+              }
+            </div>
+            <dl>
+              <div>
+                <dt>Hours</dt>
+                <dd>{{ hoursLabel() }}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="summary-card" aria-labelledby="summary-verification">
+            <div class="summary-heading">
+              <h2 id="summary-verification">Verification</h2>
+              <button
+                class="btn btn-secondary summary-edit"
+                type="button"
+                (click)="edit('identity')"
+                aria-label="Edit verification"
+              >
+                Edit
+              </button>
+            </div>
+            <dl>
+              <div>
+                <dt>Identity document</dt>
+                <dd class="summary-long">{{ draft().identityDocument?.name }}</dd>
+              </div>
+              <div>
+                <dt>Terms</dt>
+                <dd>{{ draft().termsAccepted ? 'Accepted' : 'Not accepted' }}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" (click)="back()">Back</button>
+            <button class="btn btn-primary btn-lg" type="button" (click)="submitApplication()">
+              Submit application
+            </button>
+          </div>
+        </div>
+      }
+
+      @case ('submitted') {
+        <p class="eyebrow">Application received</p>
+        <h1 id="join-heading" #stepHeading tabindex="-1">Application under review</h1>
+        <p class="lede">
+          We received your mechanic application. A reviewer will look at the details you submitted.
+          You will hear from MechReach when there is an update.
+        </p>
+        <a class="btn btn-primary btn-lg" routerLink="/">Back to home</a>
+      }
+    }
+  </div>
+</section>

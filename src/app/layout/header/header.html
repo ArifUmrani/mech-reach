@@ -30,12 +30,23 @@
       <ul class="nav-list">
         @for (link of navLinks; track link.id) {
           <li>
-            <a class="nav-link" [href]="link.href" (click)="onNavClick()">{{ link.label }}</a>
+            <a
+              class="nav-link"
+              [routerLink]="link.routerLink"
+              [fragment]="link.fragment"
+              [routerLinkActive]="link.id === 'become-a-mechanic' ? 'is-current' : ''"
+              [ariaCurrentWhenActive]="link.id === 'become-a-mechanic' ? 'page' : false"
+              (click)="onNavClick()"
+            >
+              {{ link.label }}
+            </a>
           </li>
         }
       </ul>
 
-      <a class="btn btn-primary nav-cta" href="#services" (click)="onNavClick()">Request Help</a>
+      <a class="btn btn-primary nav-cta" routerLink="/" fragment="services" (click)="onNavClick()">
+        Request Help
+      </a>
     </nav>
 
     <div class="header-actions">

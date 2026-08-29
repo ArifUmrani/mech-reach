@@ -9,18 +9,19 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { RouterLink, RouterLinkActive } from '@angular/router';
 import { ThemeService } from '../../core/theme/theme.service';
 
 interface HeaderNavLink {
   readonly id: string;
   readonly label: string;
-  readonly href: string;
+  readonly routerLink: string;
+  readonly fragment?: string;
 }
 
 @Component({
   selector: 'app-header',
-  imports: [NgOptimizedImage, RouterLink],
+  imports: [NgOptimizedImage, RouterLink, RouterLinkActive],
   templateUrl: './header.html',
   styleUrl: './header.scss',
   host: {
@@ -41,11 +42,11 @@ export class Header {
   );
 
   protected readonly navLinks: readonly HeaderNavLink[] = [
-    { id: 'home', label: 'Home', href: '#home' },
-    { id: 'services', label: 'Services', href: '#services' },
-    { id: 'how-it-works', label: 'How It Works', href: '#how-it-works' },
-    { id: 'become-a-mechanic', label: 'Become a Mechanic', href: '#become-a-mechanic' },
-    { id: 'sign-in', label: 'Sign In', href: '#sign-in' },
+    { id: 'home', label: 'Home', routerLink: '/', fragment: 'home' },
+    { id: 'services', label: 'Services', routerLink: '/', fragment: 'services' },
+    { id: 'how-it-works', label: 'How It Works', routerLink: '/', fragment: 'how-it-works' },
+    { id: 'become-a-mechanic', label: 'Become a Mechanic', routerLink: '/mechanic/join' },
+    { id: 'sign-in', label: 'Sign In', routerLink: '/', fragment: 'sign-in' },
   ];
 
   constructor() {

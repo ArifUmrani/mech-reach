@@ -80,6 +80,7 @@ html[data-theme='light'] {
   --color-link: #093d73;
   --color-focus: var(--color-orange);
   --color-hero-bg: linear-gradient(180deg, #ffffff 0%, #f3f7fb 48%, #eef4f4 100%);
+  --color-danger: #b42318;
   --color-overlay: rgb(11 31 51 / 0.42);
   --shadow-sm: 0 1px 2px rgb(11 31 51 / 0.06);
   --shadow-md: 0 8px 24px rgb(11 31 51 / 0.08);
@@ -102,6 +103,7 @@ html[data-theme='dark'] {
   --color-link: #8ec3ff;
   --color-focus: var(--color-orange);
   --color-hero-bg: linear-gradient(180deg, #071522 0%, #0b1f33 52%, #0d2438 100%);
+  --color-danger: #ff8b7b;
   --color-overlay: rgb(2 8 14 / 0.62);
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.28);
   --shadow-md: 0 10px 28px rgb(0 0 0 / 0.32);
@@ -241,6 +243,11 @@ button {
 
 .btn:hover {
   text-decoration: none;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .btn-primary {

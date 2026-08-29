@@ -22,7 +22,7 @@
       <ul>
         @for (link of navLinks; track link.id) {
           <li>
-            <a [href]="link.href">{{ link.label }}</a>
+            <a [routerLink]="link.routerLink" [fragment]="link.fragment">{{ link.label }}</a>
           </li>
         }
       </ul>
@@ -33,7 +33,7 @@
       <ul>
         @for (link of serviceLinks; track link.id) {
           <li>
-            <a [href]="link.href">{{ link.label }}</a>
+            <a [routerLink]="link.routerLink" [fragment]="link.fragment">{{ link.label }}</a>
           </li>
         }
       </ul>
@@ -44,7 +44,7 @@
       <ul>
         @for (link of accountLinks; track link.id) {
           <li>
-            <a [href]="link.href">{{ link.label }}</a>
+            <a [routerLink]="link.routerLink" [fragment]="link.fragment">{{ link.label }}</a>
           </li>
         }
       </ul>
@@ -56,7 +56,7 @@
     <ul class="legal-links">
       @for (link of legalLinks; track link.id) {
         <li>
-          <a [href]="link.href">{{ link.label }}</a>
+          <a [routerLink]="link.routerLink" [fragment]="link.fragment">{{ link.label }}</a>
         </li>
       }
     </ul>
