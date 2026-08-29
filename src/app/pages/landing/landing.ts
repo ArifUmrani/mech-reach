@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { ServiceIcon } from '../../shared/service-icon/service-icon';
 import {
   PROCESS_STEPS,
@@ -9,7 +10,7 @@ import {
 
 @Component({
   selector: 'app-landing',
-  imports: [ServiceIcon],
+  imports: [RouterLink, ServiceIcon],
   templateUrl: './landing.html',
   styleUrl: './landing.scss',
 })

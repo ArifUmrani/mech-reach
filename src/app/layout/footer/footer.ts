@@ -6,7 +6,8 @@ import { ThemeService } from '../../core/theme/theme.service';
 interface FooterLink {
   readonly id: string;
   readonly label: string;
-  readonly href: string;
+  readonly routerLink: string;
+  readonly fragment?: string;
 }
 
 @Component({
@@ -22,23 +23,23 @@ export class Footer {
   protected readonly currentYear = new Date().getFullYear();
 
   protected readonly navLinks: readonly FooterLink[] = [
-    { id: 'home', label: 'Home', href: '#home' },
-    { id: 'services', label: 'Services', href: '#services' },
-    { id: 'how-it-works', label: 'How It Works', href: '#how-it-works' },
+    { id: 'home', label: 'Home', routerLink: '/', fragment: 'home' },
+    { id: 'services', label: 'Services', routerLink: '/', fragment: 'services' },
+    { id: 'how-it-works', label: 'How It Works', routerLink: '/', fragment: 'how-it-works' },
   ];
 
   protected readonly serviceLinks: readonly FooterLink[] = [
-    { id: 'emergency', label: 'Emergency Roadside Help', href: '#services' },
-    { id: 'doorstep', label: 'Doorstep Services', href: '#doorstep-services' },
+    { id: 'emergency', label: 'Emergency Roadside Help', routerLink: '/', fragment: 'services' },
+    { id: 'doorstep', label: 'Doorstep Services', routerLink: '/', fragment: 'doorstep-services' },
   ];
 
   protected readonly accountLinks: readonly FooterLink[] = [
-    { id: 'become-a-mechanic', label: 'Become a Mechanic', href: '#become-a-mechanic' },
-    { id: 'sign-in', label: 'Sign In', href: '#sign-in' },
+    { id: 'become-a-mechanic', label: 'Become a Mechanic', routerLink: '/mechanic/join' },
+    { id: 'sign-in', label: 'Sign In', routerLink: '/', fragment: 'sign-in' },
   ];
 
   protected readonly legalLinks: readonly FooterLink[] = [
-    { id: 'privacy', label: 'Privacy', href: '#privacy' },
-    { id: 'terms', label: 'Terms', href: '#terms' },
+    { id: 'privacy', label: 'Privacy', routerLink: '/', fragment: 'privacy' },
+    { id: 'terms', label: 'Terms', routerLink: '/', fragment: 'terms' },
   ];
 }
