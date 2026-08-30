@@ -150,6 +150,31 @@ export function createRequestReference(): string {
   return `MR-${String(bytes[0] % 10_000).padStart(4, '0')}`;
 }
 
+export function scheduledAtFromDraft(
+  draft: CustomerRequestDraft,
+  now = new Date(),
+): string | null {
+  if (draft.helpKind !== 'doorstep') {
+    return null;
+  }
+
+  if (draft.scheduleWhen === 'custom' && draft.scheduleDate && draft.scheduleTime) {
+    const local = new Date(`${draft.scheduleDate}T${draft.scheduleTime}:00`);
+    return Number.isNaN(local.getTime()) ? null : local.toISOString();
+  }
+
+  if (draft.scheduleWhen !== 'today' && draft.scheduleWhen !== 'tomorrow') {
+    return null;
+  }
+
+  const scheduled = new Date(now);
+  if (draft.scheduleWhen === 'tomorrow') {
+    scheduled.setDate(scheduled.getDate() + 1);
+  }
+  scheduled.setHours(9, 0, 0, 0);
+  return scheduled.toISOString();
+}
+
 export function scheduleSummary(
   helpKind: HelpKind | '',
   when: ScheduleWhen | '',

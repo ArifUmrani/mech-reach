@@ -373,13 +373,11 @@
       @case ('otp') {
         <h1 id="request-heading" #stepHeading tabindex="-1">Enter your confirmation code</h1>
         <p class="lede">
-          Confirm the mobile number ending in {{ maskedMobile() }}. SMS delivery is not connected
-          yet, so use the code shown below.
-        </p>
-
-        <p class="code-panel" aria-live="polite">
-          <span class="code-label">Confirmation code</span>
-          <span class="code-value">{{ issuedCode() }}</span>
+          Confirm the mobile number ending in {{ maskedMobile() }}. Enter the 6-digit code sent to
+          that number.
+          @if (otpHint) {
+            For this development project, use {{ otpHint }}.
+          }
         </p>
 
         <form class="card" (submit)="confirmCode($event)" novalidate>
@@ -563,6 +561,9 @@
               Send request
             </button>
           </div>
+          @if (submitError()) {
+            <p class="error" role="alert">{{ submitError() }}</p>
+          }
         </div>
       }
 

@@ -21,6 +21,7 @@ import {
 import { Router } from '@angular/router';
 import { CustomerAuthService } from '../../core/customer-auth/customer-auth.service';
 import { isValidMobile } from '../../core/mechanic-join/mobile';
+import { developmentOtpHint } from '../../core/supabase/supabase-client';
 
 const OTP_PATTERN = /^\d{6}$/;
 
@@ -39,7 +40,7 @@ export class CustomerSignin {
   private readonly stepHeading = viewChild<ElementRef<HTMLElement>>('stepHeading');
 
   protected readonly step = signal<SignInStep>('details');
-  protected readonly issuedCode = signal('');
+  protected readonly otpHint = developmentOtpHint();
   protected readonly maskedMobile = computed(() => this.auth.maskedMobile());
 
   protected readonly detailsModel = signal({ fullName: '', mobile: '' });
@@ -78,8 +79,10 @@ export class CustomerSignin {
     event.preventDefault();
     const submitted = await submit(this.detailsForm, async () => {
       const value = this.detailsModel();
-      const challenge = this.auth.requestOtp(value.fullName.trim(), value.mobile.trim());
-      this.issuedCode.set(challenge.code);
+      const result = await this.auth.requestOtp(value.fullName.trim(), value.mobile.trim());
+      if (!result.ok) {
+        return [{ fieldTree: this.detailsForm.mobile, kind: 'otp', message: result.message }];
+      }
       this.otpModel.set({ code: '' });
       this.step.set('otp');
       return undefined;
@@ -92,7 +95,7 @@ export class CustomerSignin {
   protected async confirmCode(event: Event): Promise<void> {
     event.preventDefault();
     const submitted = await submit(this.otpForm, async () => {
-      const result = this.auth.verifyOtp(String(this.otpForm.code().controlValue()));
+      const result = await this.auth.verifyOtp(String(this.otpForm.code().controlValue()));
       if (result === 'ok') {
         void this.router.navigateByUrl('/request');
         return undefined;
@@ -110,17 +113,15 @@ export class CustomerSignin {
     }
   }
 
-  protected resendCode(): void {
+  protected async resendCode(): Promise<void> {
     const value = this.detailsModel();
-    const challenge = this.auth.requestOtp(value.fullName.trim(), value.mobile.trim());
-    this.issuedCode.set(challenge.code);
+    await this.auth.requestOtp(value.fullName.trim(), value.mobile.trim());
     this.otpModel.set({ code: '' });
   }
 
   protected changeNumber(): void {
     this.step.set('details');
     this.otpModel.set({ code: '' });
-    this.issuedCode.set('');
     this.focusStepHeading();
   }
 

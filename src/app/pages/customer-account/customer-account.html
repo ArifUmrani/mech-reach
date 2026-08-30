@@ -24,18 +24,18 @@
       </div>
 
       <section class="requests" aria-labelledby="requests-heading">
-        <h2 id="requests-heading">Requests this session</h2>
+        <h2 id="requests-heading">Your requests</h2>
 
         @if (requests().length === 0) {
-          <p class="empty">No requests in this session yet.</p>
+          <p class="empty">No requests yet.</p>
           <a class="btn btn-primary" routerLink="/request">Request help</a>
         } @else {
           <ul class="request-list">
-            @for (item of requests(); track item.reference + item.submittedAt) {
+            @for (item of requests(); track item.id) {
               <li>
                 <article class="request-card" [attr.aria-labelledby]="'request-' + item.reference">
                   <p class="request-ref">{{ item.reference }}</p>
-                  <h3 [id]="'request-' + item.reference">{{ item.serviceTitle }}</h3>
+                  <h3 [id]="'request-' + item.reference">{{ item.service_title }}</h3>
                   <dl>
                     <div>
                       <dt>Type</dt>
