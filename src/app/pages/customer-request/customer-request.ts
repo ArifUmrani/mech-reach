@@ -45,6 +45,7 @@ import {
 import { CustomerAuthService } from '../../core/customer-auth/customer-auth.service';
 import { CustomerRequestService } from '../../core/customer-request/customer-request.service';
 import { isValidMobile, normalizeMobile } from '../../core/mechanic-join/mobile';
+import { developmentOtpHint } from '../../core/supabase/supabase-client';
 
 const OTP_PATTERN = /^\d{6}$/;
 
@@ -64,7 +65,8 @@ export class CustomerRequest {
 
   protected readonly draft = this.request.draft;
   protected readonly step = signal<RequestStep>(this.request.submitted() ? 'submitted' : 'kind');
-  protected readonly issuedCode = signal('');
+  protected readonly submitError = signal('');
+  protected readonly otpHint = developmentOtpHint();
   protected readonly choiceError = signal('');
 
   protected readonly helpKindOptions = HELP_KIND_OPTIONS;
@@ -332,13 +334,17 @@ export class CustomerRequest {
       this.request.patch({ fullName });
 
       if (this.isContactVerified(mobile)) {
-        this.request.patch({ mobile: normalizeMobile(mobile) });
+        this.request.patch({ mobile: normalizeMobile(mobile), mobileVerified: true });
         this.goTo('review');
         return undefined;
       }
 
-      const challenge = this.request.requestOtp(mobile);
-      this.issuedCode.set(challenge.code);
+      const result = await this.auth.requestOtp(fullName, mobile);
+      if (!result.ok) {
+        return [{ fieldTree: this.contactForm.mobile, kind: 'otp', message: result.message }];
+      }
+
+      this.request.patch({ mobile: result.mobile, mobileVerified: false });
       this.otpModel.set({ code: '' });
       this.goTo('otp');
       return undefined;
@@ -351,8 +357,12 @@ export class CustomerRequest {
   protected async confirmCode(event: Event): Promise<void> {
     event.preventDefault();
     const submitted = await submit(this.otpForm, async () => {
-      const result = this.request.verifyOtp(String(this.otpForm.code().controlValue()));
+      const result = await this.auth.verifyOtp(String(this.otpForm.code().controlValue()));
       if (result === 'ok') {
+        this.request.patch({
+          mobile: normalizeMobile(this.contactModel().mobile),
+          mobileVerified: true,
+        });
         this.goTo('review');
         return undefined;
       }
@@ -369,22 +379,25 @@ export class CustomerRequest {
     }
   }
 
-  protected resendCode(): void {
-    const mobile = String(this.contactForm.mobile().controlValue());
-    const challenge = this.request.requestOtp(mobile);
-    this.issuedCode.set(challenge.code);
+  protected async resendCode(): Promise<void> {
+    const value = this.contactModel();
+    await this.auth.requestOtp(value.fullName.trim(), value.mobile.trim());
     this.otpModel.set({ code: '' });
   }
 
   protected changeNumber(): void {
     this.goTo('contact');
     this.otpModel.set({ code: '' });
-    this.issuedCode.set('');
     this.focusStepHeading();
   }
 
-  protected submitRequest(): void {
-    this.request.submitRequest();
+  protected async submitRequest(): Promise<void> {
+    this.submitError.set('');
+    const result = await this.request.submitRequest();
+    if (result !== 'ok') {
+      this.submitError.set('Could not save this request. Confirm your mobile number and try again.');
+      return;
+    }
     this.goTo('submitted');
     this.focusStepHeading();
   }
@@ -402,7 +415,7 @@ export class CustomerRequest {
       scheduleTime: '',
     });
     this.otpModel.set({ code: '' });
-    this.issuedCode.set('');
+    this.submitError.set('');
     this.choiceError.set('');
     this.prefillFromSession();
     this.contactModel.set({ fullName: this.draft().fullName, mobile: this.draft().mobile });

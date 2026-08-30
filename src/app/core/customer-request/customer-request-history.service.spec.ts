@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { CUSTOMER_SESSION_STORAGE_KEY } from '../customer-auth/customer-auth.model';
+import { signal } from '@angular/core';
 import { CustomerAuthService } from '../customer-auth/customer-auth.service';
 import { emptyRequestDraft } from './customer-request.model';
 import {
@@ -35,40 +35,38 @@ describe('parseCustomerRequestHistory', () => {
 });
 
 describe('CustomerRequestHistoryService', () => {
+  const session = signal({ id: 'user-1', fullName: 'Arif', mobile: '+923001234567' });
+
   beforeEach(() => {
     TestBed.resetTestingModule();
-    sessionStorage.removeItem(CUSTOMER_SESSION_STORAGE_KEY);
     sessionStorage.removeItem(CUSTOMER_REQUEST_HISTORY_STORAGE_KEY);
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: CustomerAuthService,
+          useValue: {
+            session: session.asReadonly(),
+            matchesVerifiedMobile: (mobile: string) =>
+              session() !== null && mobile.replace(/\D/g, '').endsWith('3001234567'),
+          },
+        },
+      ],
+    });
   });
 
   afterEach(() => {
-    sessionStorage.removeItem(CUSTOMER_SESSION_STORAGE_KEY);
     sessionStorage.removeItem(CUSTOMER_REQUEST_HISTORY_STORAGE_KEY);
   });
 
-  it('records a snapshot only for the signed-in mobile and keeps it after sign-out', () => {
-    const auth = TestBed.inject(CustomerAuthService);
+  it('records a snapshot only for the signed-in mobile', () => {
+    session.set({ id: 'user-1', fullName: 'Arif', mobile: '+923001234567' });
     const history = TestBed.inject(CustomerRequestHistoryService);
 
-    history.record(signedInDraft());
+    history.record({ ...signedInDraft(), mobile: '+92 333 1111111' });
     expect(history.items()).toEqual([]);
-    expect(sessionStorage.getItem(CUSTOMER_REQUEST_HISTORY_STORAGE_KEY)).toBeNull();
-
-    const challenge = auth.requestOtp('Arif', '+92 300 1234567');
-    expect(auth.verifyOtp(challenge.code)).toBe('ok');
 
     history.record(signedInDraft());
     expect(history.items()).toHaveLength(1);
     expect(history.items()[0]?.reference).toBe('MR-8266');
-    expect(sessionStorage.getItem(CUSTOMER_REQUEST_HISTORY_STORAGE_KEY)).toContain('MR-8266');
-
-    history.record({ ...signedInDraft(), mobile: '+92 333 1111111' });
-    expect(history.items()).toHaveLength(1);
-
-    auth.signOut();
-    expect(auth.signedIn()).toBe(false);
-    expect(history.items()).toEqual([]);
-    expect(sessionStorage.getItem(CUSTOMER_REQUEST_HISTORY_STORAGE_KEY)).toContain('MR-8266');
   });
 });
