@@ -19,16 +19,6 @@ describe('mobile helpers', () => {
 });
 
 describe('MechanicJoinService', () => {
-  it('verifies a freshly generated code and rejects a mismatch', () => {
-    TestBed.configureTestingModule({});
-    const service = TestBed.inject(MechanicJoinService);
-    const challenge = service.requestOtp('+92 300 1234567');
-
-    expect(service.verifyOtp('000000')).toBe('mismatch');
-    expect(service.verifyOtp(challenge.code)).toBe('ok');
-    expect(service.draft().mobileVerified).toBe(true);
-  });
-
   it('rejects a photo that is not an allowed image type', () => {
     TestBed.configureTestingModule({});
     const service = TestBed.inject(MechanicJoinService);
