@@ -38,6 +38,8 @@ export interface UploadedFileRef {
   readonly size: number;
   readonly type: string;
   readonly previewUrl: string | null;
+  /** Kept so the file can be uploaded to Supabase Storage on submit. */
+  readonly raw: File;
 }
 
 export interface MechanicJoinDraft {

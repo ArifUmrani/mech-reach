@@ -7,6 +7,7 @@ import {
 import { provideRouter, withInMemoryScrolling } from '@angular/router';
 import { routes } from './app.routes';
 import { CustomerAuthService } from './core/customer-auth/customer-auth.service';
+import { MechanicAuthService } from './core/mechanic-auth/mechanic-auth.service';
 import { createSupabaseClient, SUPABASE_CLIENT } from './core/supabase/supabase-client';
 
 export const appConfig: ApplicationConfig = {
@@ -14,6 +15,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     { provide: SUPABASE_CLIENT, useFactory: createSupabaseClient },
     provideAppInitializer(() => inject(CustomerAuthService).whenReady()),
+    provideAppInitializer(() => inject(MechanicAuthService).whenReady()),
     provideRouter(
       routes,
       withInMemoryScrolling({

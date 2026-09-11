@@ -7,25 +7,20 @@ import {
   UploadedFileRef,
   emptyDraft,
 } from './mechanic-join.model';
-import { maskMobile, normalizeMobile } from './mobile';
+import { maskMobile } from './mobile';
 
-export type OtpVerifyResult = 'ok' | 'expired' | 'mismatch' | 'missing';
 export type UploadResult = { readonly ok: true; readonly file: UploadedFileRef } | { readonly ok: false; readonly message: string };
 
-interface OtpChallenge {
-  readonly mobile: string;
-  readonly code: string;
-  readonly expiresAt: number;
-}
-
-const OTP_TTL_MS = 5 * 60 * 1000;
-const OTP_LENGTH = 6;
-
+/**
+ * Holds the mechanic-join wizard's local draft and file selections. Phone
+ * verification is handled by `MechanicAuthService`; final submission and
+ * document upload are handled by `MechanicApplicationService`. This service
+ * only owns in-memory, not-yet-submitted form state.
+ */
 @Service()
 export class MechanicJoinService {
   private readonly destroyRef = inject(DestroyRef);
   private readonly draftState = signal<MechanicJoinDraft>(emptyDraft());
-  private readonly challenge = signal<OtpChallenge | null>(null);
   private readonly submittedState = signal(false);
 
   readonly draft = this.draftState.asReadonly();
@@ -39,38 +34,8 @@ export class MechanicJoinService {
     this.draftState.update((current) => ({ ...current, ...partial }));
   }
 
-  requestOtp(mobile: string): { readonly mobile: string; readonly code: string } {
-    const normalized = normalizeMobile(mobile);
-    const code = this.generateOtp();
-    this.challenge.set({
-      mobile: normalized,
-      code,
-      expiresAt: Date.now() + OTP_TTL_MS,
-    });
-    this.patch({ mobile: normalized, mobileVerified: false });
-    return { mobile: normalized, code };
-  }
-
-  verifyOtp(code: string): OtpVerifyResult {
-    const current = this.challenge();
-    if (!current) {
-      return 'missing';
-    }
-
-    if (Date.now() > current.expiresAt) {
-      return 'expired';
-    }
-
-    if (code.trim() !== current.code) {
-      return 'mismatch';
-    }
-
-    this.patch({ mobile: current.mobile, mobileVerified: true });
-    return 'ok';
-  }
-
   maskedMobile(): string {
-    const mobile = this.draftState().mobile || this.challenge()?.mobile;
+    const mobile = this.draftState().mobile;
     return mobile ? maskMobile(mobile) : '';
   }
 
@@ -110,7 +75,8 @@ export class MechanicJoinService {
     this.patch({ photo: null });
   }
 
-  submitApplication(): void {
+  /** Marks the wizard as complete once the application has been saved. */
+  markSubmitted(): void {
     this.submittedState.set(true);
   }
 
@@ -135,6 +101,7 @@ export class MechanicJoinService {
         size: file.size,
         type: file.type,
         previewUrl: withPreview ? URL.createObjectURL(file) : null,
+        raw: file,
       },
     };
   }
@@ -149,11 +116,5 @@ export class MechanicJoinService {
     const current = this.draftState();
     this.revokePreview(current.photo);
     this.revokePreview(current.identityDocument);
-  }
-
-  private generateOtp(): string {
-    const bytes = new Uint32Array(1);
-    crypto.getRandomValues(bytes);
-    return String(bytes[0] % 10 ** OTP_LENGTH).padStart(OTP_LENGTH, '0');
   }
 }

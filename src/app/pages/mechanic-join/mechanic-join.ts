@@ -50,8 +50,11 @@ import {
   resolveHours,
   someDaysSelected,
 } from '../../core/mechanic-join/availability';
+import { MechanicApplicationService } from '../../core/mechanic-application/mechanic-application.service';
+import { MechanicAuthService } from '../../core/mechanic-auth/mechanic-auth.service';
 import { MechanicJoinService } from '../../core/mechanic-join/mechanic-join.service';
 import { isValidMobile } from '../../core/mechanic-join/mobile';
+import { developmentOtpHint } from '../../core/supabase/supabase-client';
 import { SERVICE_CATEGORIES } from '../landing/landing.content';
 
 const OTP_PATTERN = /^\d{6}$/;
@@ -67,13 +70,17 @@ const KM_PATTERN = /^(?:[1-9]|[1-9][0-9]|1[0-9]{2}|200)$/;
 export class MechanicJoin {
   private readonly injector = inject(Injector);
   private readonly join = inject(MechanicJoinService);
+  private readonly auth = inject(MechanicAuthService);
+  private readonly application = inject(MechanicApplicationService);
   private readonly stepHeading = viewChild<ElementRef<HTMLElement>>('stepHeading');
 
   protected readonly draft = this.join.draft;
-  protected readonly step = signal<JoinStep>(this.join.submitted() ? 'submitted' : 'mobile');
-  protected readonly issuedCode = signal('');
+  protected readonly step = signal<JoinStep>(this.resolveInitialStep());
+  protected readonly otpHint = developmentOtpHint();
   protected readonly choiceError = signal('');
   protected readonly uploadError = signal('');
+  protected readonly submitError = signal('');
+  protected readonly submitting = signal(false);
 
   protected readonly practiceOptions = PRACTICE_OPTIONS;
   protected readonly vehicleOptions = VEHICLE_OPTIONS;
@@ -123,7 +130,7 @@ export class MechanicJoin {
       hours: customIncomplete ? '' : hoursSummary(kind, times.from, times.to),
     };
   });
-  protected readonly maskedMobile = computed(() => this.join.maskedMobile());
+  protected readonly maskedMobile = computed(() => this.auth.maskedMobile());
 
   protected readonly mobileModel = signal({ mobile: '' });
   protected readonly otpModel = signal({ code: '' });
@@ -231,6 +238,10 @@ export class MechanicJoin {
     });
   });
 
+  constructor() {
+    void this.restoreExistingApplication();
+  }
+
   protected showError(field: { touched(): boolean; invalid(): boolean }): boolean {
     return field.touched() && field.invalid();
   }
@@ -301,8 +312,11 @@ export class MechanicJoin {
     event.preventDefault();
     const submitted = await submit(this.mobileForm, async () => {
       const mobile = String(this.mobileForm.mobile().controlValue()).trim();
-      const challenge = this.join.requestOtp(mobile);
-      this.issuedCode.set(challenge.code);
+      const result = await this.auth.requestOtp(mobile);
+      if (!result.ok) {
+        return [{ fieldTree: this.mobileForm.mobile, kind: 'otp', message: result.message }];
+      }
+      this.join.patch({ mobile: result.mobile, mobileVerified: false });
       this.otpModel.set({ code: '' });
       this.goTo('otp');
       return undefined;
@@ -315,8 +329,10 @@ export class MechanicJoin {
   protected async confirmCode(event: Event): Promise<void> {
     event.preventDefault();
     const submitted = await submit(this.otpForm, async () => {
-      const result = this.join.verifyOtp(String(this.otpForm.code().controlValue()));
+      const result = await this.auth.verifyOtp(String(this.otpForm.code().controlValue()));
       if (result === 'ok') {
+        const session = this.auth.session();
+        this.join.patch({ mobile: session?.mobile ?? this.draft().mobile, mobileVerified: true });
         this.goTo('profile');
         return undefined;
       }
@@ -333,17 +349,15 @@ export class MechanicJoin {
     }
   }
 
-  protected resendCode(): void {
+  protected async resendCode(): Promise<void> {
     const mobile = String(this.mobileForm.mobile().controlValue());
-    const challenge = this.join.requestOtp(mobile);
-    this.issuedCode.set(challenge.code);
+    await this.auth.requestOtp(mobile);
     this.otpModel.set({ code: '' });
   }
 
   protected changeNumber(): void {
     this.goTo('mobile');
     this.otpModel.set({ code: '' });
-    this.issuedCode.set('');
     this.focusStepHeading();
   }
 
@@ -586,8 +600,19 @@ export class MechanicJoin {
     this.focusStepHeading();
   }
 
-  protected submitApplication(): void {
-    this.join.submitApplication();
+  protected async submitApplication(): Promise<void> {
+    if (this.submitting()) {
+      return;
+    }
+    this.submitError.set('');
+    this.submitting.set(true);
+    const result = await this.application.submitApplication(this.draft());
+    this.submitting.set(false);
+    if (!result.ok) {
+      this.submitError.set(result.message);
+      return;
+    }
+    this.join.markSubmitted();
     this.goTo('submitted');
     this.focusStepHeading();
   }
@@ -668,5 +693,34 @@ export class MechanicJoin {
       },
       { injector: this.injector },
     );
+  }
+
+  private resolveInitialStep(): JoinStep {
+    if (this.join.submitted()) {
+      return 'submitted';
+    }
+
+    const session = this.auth.session();
+    if (session) {
+      // Mechanics and customers share the same Supabase Auth session, so a
+      // signed-in mobile number does not need to verify again.
+      this.join.patch({ mobile: session.mobile, mobileVerified: true });
+      return 'profile';
+    }
+
+    return 'mobile';
+  }
+
+  private async restoreExistingApplication(): Promise<void> {
+    if (!this.auth.signedIn()) {
+      return;
+    }
+
+    await this.application.refresh();
+    if (this.application.application()) {
+      this.join.markSubmitted();
+      this.step.set('submitted');
+      this.focusStepHeading();
+    }
   }
 }
