@@ -962,11 +962,28 @@
 
       @case ('submitted') {
         <p class="eyebrow">Application received</p>
-        <h1 id="join-heading" #stepHeading tabindex="-1">Application under review</h1>
-        <p class="lede">
-          We received your mechanic application. A reviewer will look at the details you submitted.
-          You will hear from MechReach when there is an update.
-        </p>
+        @switch (applicationStatus()) {
+          @case ('approved') {
+            <h1 id="join-heading" #stepHeading tabindex="-1">You are approved!</h1>
+            <p class="lede">
+              Your mechanic application has been approved. You can start taking jobs on MechReach.
+            </p>
+          }
+          @case ('rejected') {
+            <h1 id="join-heading" #stepHeading tabindex="-1">Application not approved</h1>
+            <p class="lede">
+              We were not able to approve your mechanic application this time. Contact MechReach
+              support if you have questions.
+            </p>
+          }
+          @default {
+            <h1 id="join-heading" #stepHeading tabindex="-1">Application under review</h1>
+            <p class="lede">
+              We received your mechanic application. A reviewer will look at the details you
+              submitted. You will hear from MechReach when there is an update.
+            </p>
+          }
+        }
         <a class="btn btn-primary btn-lg" routerLink="/">Back to home</a>
       }
     }

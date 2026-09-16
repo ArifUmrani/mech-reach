@@ -1,0 +1,107 @@
+<section class="admin-signin" aria-labelledby="admin-signin-heading">
+  <div class="container admin-signin-shell">
+    <p class="eyebrow">Admin access</p>
+
+    @switch (step()) {
+      @case ('details') {
+        <h1 id="admin-signin-heading" #stepHeading tabindex="-1">Sign in to MechReach Admin</h1>
+        <p class="lede">
+          Use the staff mobile number. We will confirm it with a one-time code.
+        </p>
+
+        <form class="card" (submit)="continueWithMobile($event)" novalidate>
+          <div class="field">
+            <label for="admin-mobile">Mobile number</label>
+            <input
+              id="admin-mobile"
+              type="tel"
+              inputmode="tel"
+              autocomplete="tel"
+              spellcheck="false"
+              [formField]="detailsForm.mobile"
+              [attr.aria-invalid]="showError(detailsForm.mobile())"
+              [attr.aria-describedby]="showError(detailsForm.mobile()) ? 'admin-mobile-error' : 'admin-mobile-hint'"
+            />
+            <p id="admin-mobile-hint" class="hint">
+              Include country code, for example +92 300 1234567.
+            </p>
+            @if (showError(detailsForm.mobile())) {
+              <p id="admin-mobile-error" class="error" role="alert">
+                {{ firstError(detailsForm.mobile().errors()) }}
+              </p>
+            }
+          </div>
+
+          <div class="actions">
+            <button
+              class="btn btn-primary btn-lg"
+              type="submit"
+              [disabled]="detailsForm().submitting()"
+            >
+              Continue with mobile
+            </button>
+          </div>
+        </form>
+      }
+
+      @case ('otp') {
+        <h1 id="admin-signin-heading" #stepHeading tabindex="-1">Enter your confirmation code</h1>
+        <p class="lede">
+          Confirm the mobile number ending in {{ maskedMobile() }}. Enter the 6-digit code sent to
+          that number.
+          @if (otpHint) {
+            For this development project, use {{ otpHint }}.
+          }
+        </p>
+
+        <form class="card" (submit)="confirmCode($event)" novalidate>
+          <div class="field">
+            <label for="admin-otp">6-digit code</label>
+            <input
+              id="admin-otp"
+              type="text"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              spellcheck="false"
+              [formField]="otpForm.code"
+              [attr.aria-invalid]="showError(otpForm.code())"
+              [attr.aria-describedby]="showError(otpForm.code()) ? 'admin-otp-error' : null"
+            />
+            @if (showError(otpForm.code())) {
+              <p id="admin-otp-error" class="error" role="alert">
+                {{ firstError(otpForm.code().errors()) }}
+              </p>
+            }
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-secondary" type="button" (click)="changeNumber()">Back</button>
+            <button class="btn btn-primary btn-lg" type="submit" [disabled]="otpForm().submitting()">
+              Confirm and continue
+            </button>
+          </div>
+        </form>
+
+        <div class="secondary-actions">
+          <button class="text-button" type="button" (click)="resendCode()">Resend code</button>
+          <button class="text-button" type="button" (click)="changeNumber()">
+            Use a different number
+          </button>
+        </div>
+      }
+
+      @case ('forbidden') {
+        <h1 id="admin-signin-heading" #stepHeading tabindex="-1">Admin access required</h1>
+        <p class="lede" role="alert">
+          This account is not authorized for the admin portal. Sign in with a staff mobile number,
+          or ask an operator to add your account to staff members.
+        </p>
+        <div class="actions">
+          <button class="btn btn-primary btn-lg" type="button" (click)="tryAgain()">
+            Try another number
+          </button>
+        </div>
+      }
+    }
+  </div>
+</section>

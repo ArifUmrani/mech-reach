@@ -131,6 +131,9 @@ export class MechanicJoin {
     };
   });
   protected readonly maskedMobile = computed(() => this.auth.maskedMobile());
+  protected readonly applicationStatus = computed(
+    () => this.application.application()?.status ?? null,
+  );
 
   protected readonly mobileModel = signal({ mobile: '' });
   protected readonly otpModel = signal({ code: '' });
