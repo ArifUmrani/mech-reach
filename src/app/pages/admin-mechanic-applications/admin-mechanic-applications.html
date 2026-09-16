@@ -1,0 +1,193 @@
+<section class="admin" aria-labelledby="admin-heading">
+  <div class="container admin-shell">
+    <p class="eyebrow">Admin</p>
+    <h1 id="admin-heading" tabindex="-1">Mechanic applications</h1>
+    <p class="lede">Review submitted applications, then approve or reject them.</p>
+
+    <div class="filter-bar" role="tablist" aria-label="Filter applications by status">
+      @for (filter of statusFilters; track filter.id) {
+        <button
+          type="button"
+          role="tab"
+          class="filter-btn"
+          [class.is-active]="statusFilter() === filter.id"
+          [attr.aria-selected]="statusFilter() === filter.id"
+          (click)="setFilter(filter.id)"
+        >
+          {{ filter.label }}
+          <span class="filter-count">{{ countFor(filter.id) }}</span>
+        </button>
+      }
+    </div>
+
+    @if (actionError()) {
+      <p class="error" role="alert">{{ actionError() }}</p>
+    }
+    @if (documentError()) {
+      <p class="error" role="alert">{{ documentError() }}</p>
+    }
+
+    @if (loading()) {
+      <p class="empty">Loading applications…</p>
+    } @else if (filteredItems().length === 0) {
+      <p class="empty">No applications in this view.</p>
+    } @else {
+      <ul class="application-list">
+        @for (item of filteredItems(); track item.id) {
+          <li>
+            <article class="application-card" [attr.aria-labelledby]="'application-name-' + item.id">
+              <div class="application-heading">
+                <div class="application-summary">
+                  <p class="status-badge" [class]="'status-' + item.status">{{ item.status }}</p>
+                  <h2 [id]="'application-name-' + item.id">{{ item.full_name }}</h2>
+                  <p class="meta">{{ mobileOf(item) }} · Submitted {{ submittedLabel(item) }}</p>
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  [attr.aria-expanded]="expandedId() === item.id"
+                  [attr.aria-controls]="'application-details-' + item.id"
+                  (click)="toggleExpanded(item.id)"
+                >
+                  {{ expandedId() === item.id ? 'Hide details' : 'View details' }}
+                </button>
+              </div>
+
+              @if (expandedId() === item.id) {
+                <div class="application-details" [id]="'application-details-' + item.id">
+                  <dl>
+                    <div>
+                      <dt>Email</dt>
+                      <dd>{{ item.email || 'Not provided' }}</dd>
+                    </div>
+                    <div>
+                      <dt>Practice</dt>
+                      <dd>
+                        {{ practiceLabel(item) }}
+                        @if (item.practice_kind === 'workshop' && item.workshop_name) {
+                          · {{ item.workshop_name }}
+                        }
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Experience</dt>
+                      <dd>{{ item.years_experience }} years</dd>
+                    </div>
+                    <div>
+                      <dt>Vehicles</dt>
+                      <dd>{{ vehicleLabel(item) }}</dd>
+                    </div>
+                    <div>
+                      <dt>Coverage</dt>
+                      <dd>{{ coverageLabel(item) }}</dd>
+                    </div>
+                    <div>
+                      <dt>City</dt>
+                      <dd>{{ item.city }}</dd>
+                    </div>
+                    @if (item.service_areas) {
+                      <div>
+                        <dt>Service areas</dt>
+                        <dd class="long">{{ item.service_areas }}</dd>
+                      </div>
+                    }
+                    <div>
+                      <dt>Travel distance</dt>
+                      <dd>Up to {{ item.travel_km }} km</dd>
+                    </div>
+                    <div>
+                      <dt>Availability</dt>
+                      <dd>{{ daysLabel(item) }} · {{ hoursLabel(item) }}</dd>
+                    </div>
+                  </dl>
+
+                  <div class="services-block">
+                    <p class="summary-label">Services offered</p>
+                    <ul class="summary-chips">
+                      @for (title of serviceTitles(item); track title) {
+                        <li>{{ title }}</li>
+                      }
+                    </ul>
+                    @if (item.other_services) {
+                      <p class="long">{{ item.other_services }}</p>
+                    }
+                  </div>
+
+                  <div class="documents">
+                    <button
+                      type="button"
+                      class="btn btn-secondary"
+                      [disabled]="isOpeningDocument(item.id, 'identity')"
+                      (click)="viewDocument(item, 'identity')"
+                    >
+                      {{
+                        isOpeningDocument(item.id, 'identity')
+                          ? 'Opening…'
+                          : 'View identity document (opens in a new tab)'
+                      }}
+                    </button>
+                    @if (item.photo_path) {
+                      <button
+                        type="button"
+                        class="btn btn-secondary"
+                        [disabled]="isOpeningDocument(item.id, 'photo')"
+                        (click)="viewDocument(item, 'photo')"
+                      >
+                        {{
+                          isOpeningDocument(item.id, 'photo')
+                            ? 'Opening…'
+                            : 'View photo (opens in a new tab)'
+                        }}
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+
+              @if (item.status === 'pending') {
+                <div class="review-actions">
+                  @if (confirmingRejectId() === item.id) {
+                    <p class="confirm-text">Reject this application?</p>
+                    <button
+                      type="button"
+                      class="btn btn-danger"
+                      [disabled]="isActingOn(item.id)"
+                      (click)="confirmReject(item.id)"
+                    >
+                      Yes, reject
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-secondary"
+                      [disabled]="isActingOn(item.id)"
+                      (click)="cancelRejectConfirmation()"
+                    >
+                      Cancel
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="btn btn-primary"
+                      [disabled]="isActingOn(item.id)"
+                      (click)="approve(item.id)"
+                    >
+                      {{ isActingOn(item.id) ? 'Working…' : 'Approve' }}
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-danger"
+                      [disabled]="isActingOn(item.id)"
+                      (click)="askRejectConfirmation(item.id)"
+                    >
+                      Reject
+                    </button>
+                  }
+                </div>
+              }
+            </article>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+</section>
